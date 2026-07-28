@@ -13,6 +13,6 @@ export async function POST(request: Request) {
   // 실제 database name은 활성 대상 DB repository에서만 가져와야 합니다. 선행 모듈이 없는
   // 현재 상태에서는 qualified table을 허용하지 않고 구조 검증만 수행합니다.
   const validation = validateSelectQuery(sql, "__unresolved_database__", policy.maxRows, policy.maxSqlLength);
-  if (!validation.valid) return NextResponse.json({ ok: false, errorType: "validation", error: validation.errorMessage }, { status: 400 });
-  return NextResponse.json({ ok: false, errorType: "connection", error: "대상 DB 실행 연결이 아직 구성되지 않았습니다." }, { status: 503 });
+  if (!validation.valid) return NextResponse.json({ ok: false, queryExecutionLogId: null, errorType: "validation", error: validation.errorMessage }, { status: 400 });
+  return NextResponse.json({ ok: false, queryExecutionLogId: null, errorType: "connection", error: "대상 DB 실행 연결이 아직 구성되지 않았습니다." }, { status: 503 });
 }

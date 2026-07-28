@@ -33,6 +33,10 @@ export type QueryResult = Readonly<{
   truncated: boolean;
   warnings: ReadonlyArray<string>;
   referencedTables: ReadonlyArray<string>;
+  queryExecutionLogId: number | null;
+  analysisHistoryId: number | null;
+  historyWarning: string | null;
+  executedAt: string;
 }>;
 
 export type QueryStatus = "idle" | "running" | "success" | "empty" | "error";
@@ -57,6 +61,30 @@ export type AnalysisHistoryDetail = Readonly<{
   generatedSql: string | null;
   modelName: string | null;
   status: "success" | "failed";
+  errorMessage: string | null;
+  createdAt: string;
+}>;
+
+export type QueryHistoryItem = Readonly<{
+  id: number;
+  connectionId: number;
+  analysisHistoryId: number | null;
+  sqlPreview: string;
+  success: boolean;
+  rowCount: number | null;
+  executionMs: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}>;
+
+export type QueryHistoryDetail = Readonly<{
+  id: number;
+  connectionId: number;
+  analysisHistoryId: number | null;
+  sqlText: string;
+  success: boolean;
+  rowCount: number | null;
+  executionMs: number | null;
   errorMessage: string | null;
   createdAt: string;
 }>;
