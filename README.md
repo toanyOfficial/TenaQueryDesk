@@ -335,3 +335,7 @@ git show EXPECTED_COMMIT -- FILE_PATH
 `branch --contains`에 target branch가 없거나 `merge-base --is-ancestor`가 실패하면 PR이 아직 merge되지 않았거나 다른 ref에만 있는 상태입니다. `ls-tree HEAD`에 안내된 script가 없으면 서버 reset 후에도 해당 파일이 생기지 않는 것이 정상이며 앱 설정 문제로 오판하지 않습니다. 로컬 commit과 PR 생성은 targetRef merge를 뜻하지 않으므로 merge 여부를 별도로 확인해야 합니다.
 
 코드 작업 완료 보고에는 실제 commit SHA, 작업 branch, 변경 파일, `git status --short`, `git show --stat --oneline HEAD`, 중요 파일의 HEAD 포함 여부, PR 생성 여부를 포함해야 합니다. PR merge와 targetRef 포함 여부, 접근하지 못한 운영 서버 상태는 별도 확인 대상으로 명시합니다.
+
+## Step 18 최종 운영 배포 판정
+
+운영자가 순서대로 실행할 최종 준비 절차, 환경변수 대조표, 배포 중단 기준, 읽기 전용 E2E와 장애 점검표는 [`docs/operations/deployment-checklist.md`](docs/operations/deployment-checklist.md)에 정리했습니다. 현재 프로젝트는 루트 `schema.md`, Bun lock, 실제 관리/대상 DB repository와 E2E가 없고 핵심 API가 안전한 `503` placeholder이므로 **운영 불가**입니다. 문서의 필수 항목을 구현·검증하기 전에는 Auto Deploy에 활성 등록하거나 운영 완료로 보고하지 않습니다.

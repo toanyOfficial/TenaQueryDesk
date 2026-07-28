@@ -5,6 +5,7 @@
     ".gitignore",
     "README.md",
     "config/required-files.json",
+    "docs/operations/deployment-checklist.md",
     "next.config.ts",
     "package.json",
     "scripts/generate-build-info.ts",
