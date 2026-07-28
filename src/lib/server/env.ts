@@ -12,11 +12,6 @@ export type AuthEnvironment = Readonly<{
   sessionSecret: string;
 }>;
 
-export type OpenAIEnvironment = Readonly<{
-  apiKey: string;
-  model: string;
-}>;
-
 export type ManagementDbEnvironment = Readonly<{
   host: string;
   port: number;
@@ -40,14 +35,6 @@ export function getAuthEnvironment(): AuthEnvironment {
   return Object.freeze({
     passwordHash: requireNonEmpty(process.env, "APP_PASSWORD_HASH"),
     sessionSecret: requireMinimumLength(process.env, "SESSION_SECRET", 32),
-  });
-}
-
-/** Step 8에서 OpenAI 서버 호출을 수행할 때 검증합니다. */
-export function getOpenAIEnvironment(): OpenAIEnvironment {
-  return Object.freeze({
-    apiKey: requireNonEmpty(process.env, "OPENAI_API_KEY"),
-    model: requireNonEmpty(process.env, "OPENAI_MODEL"),
   });
 }
 

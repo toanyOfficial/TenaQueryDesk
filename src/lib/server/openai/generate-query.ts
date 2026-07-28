@@ -5,6 +5,7 @@ import { requestStructuredCompletion } from "./client";
 import { buildQueryUserPrompt, QUERY_SYSTEM_PROMPT } from "./prompts";
 import { parseGeneratedQueryResponse } from "./response-schema";
 import type { QueryGenerationRecord } from "./types";
+import { OpenAiOperationError } from "./errors";
 export async function generateQueryFromSchema(connectionId: number, prompt: string, bundle: SchemaBundle): Promise<QueryGenerationRecord> {
   const normalized = prompt.trim();
   if (!Number.isSafeInteger(connectionId) || connectionId < 1 || bundle.manifest.connectionId !== connectionId) throw new Error("잘못된 대상 DB입니다.");
@@ -12,7 +13,7 @@ export async function generateQueryFromSchema(connectionId: number, prompt: stri
   const started = Date.now(); const startedAt = new Date(started).toISOString();
   const selection = selectSchema(normalized, bundle);
   const completion = await requestStructuredCompletion(QUERY_SYSTEM_PROMPT, buildQueryUserPrompt(normalized, selection));
-  const result = parseGeneratedQueryResponse(completion.value, new Set(selection.selectedTables));
+  let result; try { result = parseGeneratedQueryResponse(completion.value, new Set(selection.selectedTables)); } catch { throw new OpenAiOperationError("response_invalid"); }
   const completed = Date.now();
   return { connectionId, prompt: normalized, model: completion.model, result, startedAt, completedAt: new Date(completed).toISOString(), durationMs: completed - started };
 }

@@ -33,7 +33,10 @@ bun run dev
 | `APP_PASSWORD_HASH` | Step 3 공용 로그인에서 사용할 원문이 아닌 비밀번호 해시 |
 | `SESSION_SECRET` | Step 3 세션 서명·검증에 사용할 32자 이상의 무작위 문자열 |
 | `OPENAI_API_KEY` | Step 8 OpenAI 서버 호출용 API 키 |
-| `OPENAI_MODEL` | 서버에서 사용할 구조화 출력 지원 OpenAI 모델명 |
+| `OPENAI_MODEL` | 서버에서 사용할 구조화 출력 지원 모델명 |
+| `OPENAI_REQUEST_TIMEOUT_MS` | OpenAI 전체 요청 제한시간, 기본 60,000ms |
+| `OPENAI_MAX_OUTPUT_TOKENS` | 구조화 응답 최대 출력 토큰, 기본 4,000 |
+| `OPENAI_MAX_RETRIES` | 네트워크·429·5xx 제한 재시도, 기본 1회 |
 | `MANAGEMENT_DB_HOST` | 관리 MySQL 호스트 |
 | `MANAGEMENT_DB_PORT` | 관리 MySQL 포트, 미입력 시 `3306` |
 | `MANAGEMENT_DB_NAME` | 관리 DB 이름 |
@@ -218,3 +221,13 @@ SHOW GRANTS FOR 'ANALYSIS_ACCOUNT'@'ANALYSIS_SERVER_IP';
 ```
 
 `SHOW VIEW`는 View 정의 수집이 실제로 필요한지 검증한 뒤에만 추가합니다. 일반 테이블·FK·index metadata는 해당 DB에 대한 최소 접근으로 확인하고, 부족한 metadata 권한은 스키마 수집 제한으로 별도 처리합니다. 실제 권한 생성·변경·회수는 DBA 또는 운영자가 수행해야 합니다.
+
+## Step 15 OpenAI 운영 설정과 장애 격리
+
+OpenAI 설정은 `src/lib/server/openai/config.ts`를 통해 실제 GPT 요청 시점에만 읽습니다. `OPENAI_API_KEY`와 `OPENAI_MODEL`은 필수이며 timeout은 5~180초, 출력은 500~16,000 token, 재시도는 0~2회로 제한됩니다. 기본값은 각각 60초, 4,000 token, 재시도 1회입니다. 모델 allowlist를 소스에 고정하지 않으므로 모델 교체는 서버 `.env`의 `OPENAI_MODEL`을 변경하고 프로세스를 재시작하여 적용합니다. 브라우저 요청은 모델, timeout, 출력 token과 재시도 횟수를 지정할 수 없습니다.
+
+현재는 공식 SDK 의존성 없이 서버 `fetch`로 Chat Completions JSON Schema 응답을 요청합니다. 하나의 전체 deadline에 AbortController를 적용하며 네트워크 오류, 일반 429와 5xx만 짧은 backoff로 제한 재시도합니다. 인증·모델·quota·잘못된 요청·context 초과·safety refusal·응답 파싱 오류는 재시도하지 않고 안전한 code와 사용자 메시지로 변환합니다. context 초과 시 자동으로 schema를 반복 축소하거나 fallback 모델로 우회하지 않고 사용자에게 요청 범위를 줄이도록 안내합니다.
+
+인증된 `/api/admin/openai/status`는 API 키의 존재 여부만 내부에서 확인하며 키 값이나 일부 문자를 반환하지 않습니다. 모델명, timeout, 출력 한도, 재시도 및 설정 issue만 표시합니다. 실제 연결 테스트는 비용과 rate limit을 발생시키므로 이번 단계에서는 추가하지 않았고 기존 실제 GPT 요청으로만 확인합니다. `analysis_history` repository가 아직 없어 최근 성공·실패는 `확인하지 못함`으로 표시합니다.
+
+운영에서는 개인 임시 키를 공유하지 말고 개발·테스트·운영별 OpenAI 프로젝트 전용 키와 프로젝트 budget/usage limit을 사용해야 합니다. 키는 운영 서버의 권한 `600` `.env`에만 두고 Git, 브라우저와 로그에 기록하지 않습니다. 노출이 의심되면 즉시 폐기하고 재발급합니다. 전체 사용자 질문, 시스템 프롬프트, schema context, assistant 답변과 SQL도 일반 로그에 출력하지 않습니다. OpenAI 장애는 GPT 패널에만 영향을 주며 로그인, 관리, 권한 점검, 직접 SQL 작성과 SELECT 실행 경로를 초기화하거나 중단하지 않습니다.
