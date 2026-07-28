@@ -67,6 +67,12 @@ unset APP_PASSWORD
 
 현재 저장소에는 관리 DB 구조 기준인 루트 `schema.md`가 제공되지 않았습니다. 따라서 `db_connection`의 실제 컬럼과 제약을 확인할 수 없어 repository, CRUD API, 대상 DB 풀 및 관리 UI는 의도적으로 구현하지 않았습니다. 문서가 제공되기 전에는 예상 컬럼을 SQL에 사용하거나 관리 DB 스키마를 추측하지 않습니다. 기존 데이터 및 암호문 포맷 호환성 역시 관리 DB 접속정보와 스키마 문서가 제공된 뒤 값 자체를 노출하지 않는 방식으로 확인해야 합니다.
 
+## 스키마 파일 포맷 기반
+
+MySQL 스키마 생성물은 운영 서버 로컬의 `schemas/{connection_key}` 아래 `manifest.json`, `relationships.json`, `tables/*.json`으로 저장하며 Git에는 포함하지 않습니다. 파일 작성기는 `schemas/.tmp`에서 모든 JSON을 먼저 작성한 뒤 기존 정상 디렉터리를 백업하고 교체하며, 실패하면 기존 디렉터리를 복원합니다. 테이블 파일명은 실제 이름의 UTF-8 바이트를 hex로 인코딩하여 경로 순회와 파일명 충돌을 방지합니다.
+
+스키마 JSON TypeScript 포맷과 원자적 파일 작성 기반은 준비했지만, Step 4의 대상 DB repository와 풀은 `schema.md` 부재로 구현할 수 없었습니다. 따라서 실제 `information_schema` 수집기, 생성 API 및 관리 화면 버튼도 연결하지 않았습니다. 해당 선행 모듈이 제공된 뒤 MySQL 읽기 전용 메타데이터 조회를 연결해야 하며, Step 6에서는 생성 결과에 버전·해시·이력 기록을 추가할 예정입니다.
+
 ## 관리 DB 연결 확인
 
 개발 서버를 실행한 뒤 다음 endpoint로 연결 풀과 `SELECT 1` 실행 여부만 확인할 수 있습니다.
