@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "requiredFiles": [
+    ".env.example",
+    ".gitignore",
+    "README.md",
+    "config/required-files.json",
+    "next.config.ts",
+    "package.json",
+    "scripts/generate-build-info.ts",
+    "scripts/verify-required-files.ts",
+    "scripts/verify-runtime.sh",
+    "src/app/api/health/route.ts",
+    "src/lib/server/auth/session.ts",
+    "src/lib/server/db/management-db.ts",
+    "src/lib/server/env.ts",
+    "src/lib/server/openai/generate-query.ts",
+    "src/lib/server/schema/write-schema-files.ts",
+    "src/lib/server/sql/validate-select-query.ts",
+    "tsconfig.json"
+  ],
+  "optionalFiles": ["schema.md"],
+  "optionalAny": [
+    {
+      "label": "Bun lock file",
+      "files": ["bun.lock", "bun.lockb"]
+    }
+  ]
+}
