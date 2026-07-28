@@ -71,7 +71,11 @@ unset APP_PASSWORD
 
 MySQL 스키마 생성물은 운영 서버 로컬의 `schemas/{connection_key}` 아래 `manifest.json`, `relationships.json`, `tables/*.json`으로 저장하며 Git에는 포함하지 않습니다. 파일 작성기는 `schemas/.tmp`에서 모든 JSON을 먼저 작성한 뒤 기존 정상 디렉터리를 백업하고 교체하며, 실패하면 기존 디렉터리를 복원합니다. 테이블 파일명은 실제 이름의 UTF-8 바이트를 hex로 인코딩하여 경로 순회와 파일명 충돌을 방지합니다.
 
-스키마 JSON TypeScript 포맷과 원자적 파일 작성 기반은 준비했지만, Step 4의 대상 DB repository와 풀은 `schema.md` 부재로 구현할 수 없었습니다. 따라서 실제 `information_schema` 수집기, 생성 API 및 관리 화면 버튼도 연결하지 않았습니다. 해당 선행 모듈이 제공된 뒤 MySQL 읽기 전용 메타데이터 조회를 연결해야 하며, Step 6에서는 생성 결과에 버전·해시·이력 기록을 추가할 예정입니다.
+스키마 버전 파일은 `schemas/{connection_key}/versions/v000001` 형식으로 보존하고, 최신 성공 버전은 심볼릭 링크가 아닌 원자적으로 교체되는 `current.json` 메타파일이 가리킵니다. 구조 해시는 SHA-256이며 JSON 객체 키를 정렬하고 모든 `generatedAt` 필드를 제외한 canonical payload를 사용합니다. 따라서 생성 시각만 다른 동일 구조는 같은 해시가 됩니다. 동일 구조를 다시 생성해도 요청 이력을 보존하기 위해 버전은 증가하고 새 버전 디렉터리를 저장하는 정책입니다.
+
+새 버전 파일 작성과 해시 계산이 성공한 뒤에만 `current.json`을 갱신하므로 실패한 결과가 최신 정상 버전을 덮어쓰지 않습니다. 실제 생성물은 계속 Git에서 제외됩니다. Auto Deploy의 현재 `git reset --hard` 흐름은 비추적 파일을 삭제하지 않지만 서버 디스크를 영구 백업으로 간주할 수 없으므로 운영 전 별도 백업 정책이 필요합니다. Step 8은 관리 DB의 최신 성공 snapshot과 실제 버전 디렉터리를 함께 검증한 후 사용해야 합니다.
+
+스키마 JSON 타입, 결정적 해시, 버전 파일 작성 및 current 포인터 기반은 준비했지만, Step 4의 대상 DB repository와 풀은 `schema.md` 부재로 구현할 수 없었습니다. 실제 `information_schema` 수집기, 생성 API 및 관리 화면도 존재하지 않으며, `schema_snapshot`의 실제 컬럼과 상태 제약을 모르는 상태에서 SQL repository를 추측하여 추가하지 않습니다. `schema.md`가 제공되면 짧은 트랜잭션으로 `processing` 이력과 connection별 version을 할당하고, 파일 작업 밖에서 `success` 또는 `failed`로 갱신해야 합니다.
 
 ## 관리 DB 연결 확인
 

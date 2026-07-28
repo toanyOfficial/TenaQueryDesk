@@ -19,3 +19,18 @@ export type SchemaManifest = Readonly<{ formatVersion: 1; connectionId: number; 
 export type DatabaseRelationshipDocument = Readonly<{ formatVersion: 1; generatedAt: string; relationships: ReadonlyArray<ForeignKeySchema> }>;
 export type SchemaBundle = Readonly<{ manifest: SchemaManifest; relationships: DatabaseRelationshipDocument; tables: ReadonlyArray<TableSchemaDocument> }>;
 export type SchemaGenerationResult = Readonly<{ connectionId: number; connectionKey: string; outputPath: string; generatedAt: string; tableCount: number; viewCount: number; fileCount: number }>;
+
+export type SchemaCurrentPointer = Readonly<{
+  formatVersion: 1;
+  connectionId: number;
+  connectionKey: string;
+  latestVersion: number;
+  path: string;
+  generatedAt: string;
+  schemaHash: string;
+}>;
+
+export type VersionedSchemaGenerationResult = SchemaGenerationResult & Readonly<{
+  versionNo: number;
+  schemaHash: string;
+}>;
