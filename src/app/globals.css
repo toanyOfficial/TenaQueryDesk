@@ -119,6 +119,28 @@ textarea {
   background: var(--accent);
 }
 
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-button {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: #46504c;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .workspace-grid {
   display: grid;
   flex: 1;
@@ -221,4 +243,121 @@ textarea {
 
 .empty-state > span:last-child {
   font-size: 12px;
+}
+
+.login-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 48px;
+  background:
+    linear-gradient(135deg, rgba(23, 107, 85, 0.08), transparent 42%),
+    var(--canvas);
+}
+
+.login-card {
+  width: 420px;
+  padding: 42px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(24, 32, 30, 0.1);
+}
+
+.login-brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 28px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--ink);
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.login-eyebrow,
+.login-card h1,
+.login-description,
+.login-notice,
+.login-error {
+  margin: 0;
+}
+
+.login-eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.login-card h1 {
+  margin-top: 7px;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.login-description {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 32px;
+}
+
+.login-form label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.login-form input {
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid #cbd3cf;
+  border-radius: 9px;
+  outline: none;
+  background: white;
+  color: var(--ink);
+}
+
+.login-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(23, 107, 85, 0.12);
+}
+
+.login-error {
+  min-height: 34px;
+  padding-top: 7px;
+  color: #a83c37;
+  font-size: 12px;
+}
+
+.login-form button {
+  height: 46px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.login-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.login-notice {
+  margin-top: 20px;
+  color: #87908c;
+  font-size: 11px;
+  text-align: center;
 }

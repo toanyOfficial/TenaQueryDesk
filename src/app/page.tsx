@@ -1,3 +1,8 @@
+import { redirect } from "next/navigation";
+
+import { LogoutButton } from "@/components/logout-button";
+import { getSession } from "@/lib/server/auth/session";
+
 const panels = {
   assistant: {
     eyebrow: "ASK",
@@ -36,7 +41,13 @@ function EmptyPanel({
   );
 }
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  if (!(await getSession())) {
+    redirect("/login");
+  }
+
   return (
     <main className="workspace-shell">
       <header className="topbar">
@@ -50,9 +61,12 @@ export default function Home() {
         <p className="product-summary">
           실제 DB 스키마를 기준으로 안전한 조회 SQL을 준비하는 내부 분석 공간
         </p>
-        <div className="status" aria-label="현재 서비스 상태">
-          <span aria-hidden="true" />
-          기반 구성 중
+        <div className="account-actions">
+          <div className="status" aria-label="현재 로그인 상태">
+            <span aria-hidden="true" />
+            인증됨
+          </div>
+          <LogoutButton />
         </div>
       </header>
 
