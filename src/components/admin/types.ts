@@ -1,0 +1,3 @@
+export type AdminConnection = Readonly<{ id: number; connectionKey: string; displayName: string; dbType: "mysql"; active: boolean; connectionStatus: "healthy" | "failed" | "unknown"; checkedAt: string | null }>;
+export type AdminSchemaState = Readonly<{ connectionId: number; versionNo: number | null; status: "success" | "processing" | "failed" | "missing"; generatedAt: string | null; tableCount: number | null; viewCount: number | null; schemaHash: string | null; filesPresent: boolean }>;
+export type AdminFailure = Readonly<{ id: number; connectionId: number; kind: "gpt" | "sql"; preview: string; requestType?: string; errorMessage: string; executionMs?: number | null; analysisHistoryId?: number | null; createdAt: string }>;

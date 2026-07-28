@@ -171,3 +171,20 @@ SQL 실행 이력은 대상 DB에 **실제로 전달된 단일 SELECT**의 성�
 목록은 현재 선택 DB 기준 최신 20건(최대 100건), SQL 300자 미리보기를 사용하고 전체 SQL은 상세 API에서만 조회하는 설계입니다. 과거 SQL을 편집기에 적용할 때 확인을 거치며 결과 행은 복구하거나 자동 재실행하지 않습니다. 삭제 기능은 제공하지 않으며, 연결된 `analysis_history_id`는 동일 connection일 때만 유지합니다.
 
 현재 저장소에는 관리 DB 계약의 기준인 루트 `schema.md`와 Step 4 대상 DB repository/pool이 없습니다. 존재하지 않는 컬럼을 추측하거나 관리 DB를 변경하지 않기 위해 실제 `query_execution_log` INSERT/SELECT repository는 구현하지 않았습니다. `/api/query/history`와 상세 API는 인증 및 입력 검증 후 안전한 `503`을 반환하며, 실행 API도 대상 DB에 접속하지 않으므로 실행 이력을 생성하지 않습니다. 실제 테이블 정의와 대상 DB 모듈이 제공되면 이 계약에 맞춰 파라미터 바인딩 repository를 연결해야 합니다.
+
+## Step 12 최소 관리 화면 및 MVP 준비 상태
+
+인증된 `/admin` 경로는 분석 화면과 같은 세션·헤더를 사용하며 대상 DB 연결, 최신 스키마, 최근 GPT 실패, 최근 SQL 실행 실패를 서로 독립적으로 조회합니다. 한 영역이 실패해도 나머지 영역은 유지되고, 목록에는 접속정보·전체 스키마·전체 LONGTEXT를 넣지 않습니다. 스키마 노후도는 한곳의 상수로 7일 `갱신 권장`, 30일 `오래된 스키마`를 표시하며 자동 갱신이나 차단은 하지 않습니다. 수동 갱신은 확인과 connection별 중복 클릭 차단을 거치고, 실패 상세는 안전한 미리보기만 표시하며 SQL을 자동 실행하지 않습니다.
+
+다만 현재 repository에는 `schema.md`, 대상 DB CRUD/연결 테스트 API, 스키마 수집 API, GPT/SQL 이력 repository가 없습니다. 따라서 관리 화면은 기존 계약 endpoint를 통합하는 UI 경계와 독립 오류 상태까지만 제공하고, 신규 등록·수정·활성 변경은 지원 API가 제공될 때까지 명시적으로 비활성화합니다. 이 상태는 운영 가능한 MVP가 아니며 실제 기능이 연결된 것처럼 표시하지 않습니다.
+
+### Auto Deploy 등록 전 체크리스트
+
+- runtime은 `nextjs_bun`, 서버 경로는 `/srv/{project_name}`, 포트는 배포 설정의 `PORT`를 사용합니다.
+- 최초 clone 뒤 `appuser`로 `bun install --frozen-lockfile`을 실행하고 파일 소유자를 `appuser:appuser`로 맞춥니다.
+- 서버에 직접 배치한 `.env`는 `appuser:appuser`, 권한 `600`으로 유지하며 Git에 추가하지 않습니다.
+- `bun run build`와 `bun run start -H 0.0.0.0`을 배포 대상 Bun/Next 버전에서 검증합니다.
+- `schemas/`와 임시 디렉터리는 `appuser` 쓰기 권한과 별도 백업 정책을 갖추며 생성물은 Git에 추가하지 않습니다.
+- 관리 DB와 대상 DB 네트워크 접근을 확인하고 대상 DB 계정에는 SELECT 및 필요한 metadata 최소 권한만 부여합니다.
+- `APP_PASSWORD_HASH`, `SESSION_SECRET`, 관리 DB 설정, `DB_CREDENTIAL_ENCRYPTION_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL` 및 쿼리 제한 설정을 서버 환경에 배치합니다.
+- 운영 전 반드시 실제 `schema.md` 계약, 대상 DB CRUD/pool, 스키마 수집·snapshot repository, GPT 이력, 실행 이력과 관리 API를 연결하고 전체 흐름을 테스트합니다.
