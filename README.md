@@ -100,6 +100,14 @@ GPT는 대상 DB에 접속하지 않고 최신 성공 스키마 파일만 사용
 
 현재 저장소에는 `schema.md`, 활성 연결 repository 및 최신 성공 `schema_snapshot` 조회 함수 자체가 없습니다. 따라서 generate API는 인증과 입력 검증까지 수행한 뒤 `503`으로 안전하게 중단하며 OpenAI를 호출하지 않습니다. 이 선행 기능이 제공되면 `loadSchemaBundle()`과 `generateQueryFromSchema()`를 연결할 수 있습니다. Step 9에서는 준비된 모델명·질문·응답·처리시간 결과를 이력에 저장하고, Step 10에서는 생성 SQL에 별도의 SELECT 실행 안전 검증을 적용해야 합니다.
 
+## GPT 질의 이력 기반
+
+분석 화면은 현재 선택 DB의 최근 이력을 `/api/analysis/history?connectionId={id}&limit=20`에서 조회하는 드로어와 `/api/analysis/history/{id}` 상세 불러오기 흐름을 갖습니다. 목록은 질문 200자·답변 300자 수준의 미리보기, 요청 유형, 성공·실패, SQL 존재 여부와 생성 시각만 받는 계약이며 전체 LONGTEXT는 상세 요청에서만 받습니다. 성공 상세를 선택하면 질문과 답변을 대화에 복원하고 SQL이 있으면 교체 확인 후 편집기에 반영합니다. 실패 상세는 안전한 오류만 표시하고 SQL을 반영하지 않습니다.
+
+워크스페이스는 `analysisHistoryId`를 별도 상태로 유지합니다. 새 GPT 결과나 과거 이력 불러오기 시 설정하고, 사용자가 SQL을 수정해도 출처 추적을 위해 유지하며, DB 변경 또는 SQL 초기화 시 제거합니다. 이를 Step 10의 실행 요청과 Step 11의 `query_execution_log` 연결에 사용할 예정입니다.
+
+다만 루트 `schema.md`가 없어 `analysis_history`의 실제 컬럼·enum·인덱스·FK를 확인할 수 없으므로 repository SQL과 request type 매핑을 추측해 작성하지 않았습니다. 인증된 목록·상세 API는 파라미터 검증 후 현재 `503`을 반환합니다. 실제 구조가 제공되면 완료 후 단일 INSERT 정책으로 질문, 유형, 답변, SQL, 모델, 성공·실패와 안전한 오류만 저장하고 API 키, 접속정보, 시스템 프롬프트, 전체 스키마, 절대경로와 stack trace는 저장하지 않습니다. 이력 저장 자체가 실패해도 성공한 GPT 결과는 `analysisHistoryId: null`과 제한된 경고로 반환하는 비차단 정책을 적용해야 합니다. 삭제·수정·자동 정리 기능은 제공하지 않습니다.
+
 ## 프로덕션 빌드 및 실행
 
 ```bash

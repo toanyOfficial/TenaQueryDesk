@@ -10,5 +10,5 @@ export async function POST(request: Request) {
   if (!Number.isSafeInteger(connectionId) || (connectionId as number) < 1 || typeof prompt !== "string" || prompt.trim().length < 2 || prompt.trim().length > 5_000) return NextResponse.json({ ok: false, error: "대상 DB와 질문을 확인해 주세요." }, { status: 400 });
   // db_connection 및 schema_snapshot의 실제 컬럼을 확인할 schema.md가 제공되기 전에는
   // 활성 연결과 최신 성공 snapshot을 추측하거나 우회하지 않습니다.
-  return NextResponse.json({ ok: false, error: "최신 성공 스키마 조회 기능이 아직 구성되지 않았습니다." }, { status: 503 });
+  return NextResponse.json({ ok: false, analysisHistoryId: null, error: "최신 성공 스키마 조회 기능이 아직 구성되지 않았습니다." }, { status: 503 });
 }
