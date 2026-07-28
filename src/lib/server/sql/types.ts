@@ -1,0 +1,4 @@
+export type SqlValidationResult = Readonly<{ valid: true; normalizedSql: string; executedSql: string; statementType: "select"; referencedTables: ReadonlyArray<string>; warnings: ReadonlyArray<string> }> | Readonly<{ valid: false; errorCode: string; errorMessage: string; warnings: ReadonlyArray<string> }>;
+export type QueryResultColumn = Readonly<{ name: string; type: string }>;
+export type QueryExecutionResult = Readonly<{ columns: ReadonlyArray<QueryResultColumn>; rows: ReadonlyArray<Readonly<Record<string, unknown>>>; rowCount: number; truncated: boolean; executionMs: number; warnings: ReadonlyArray<string>; referencedTables: ReadonlyArray<string>; submittedSql: string; executedSql: string; analysisHistoryId: number | null }>;
+export type QueryExecutionErrorType = "authentication" | "validation" | "connection" | "timeout" | "execution" | "serialization" | "internal";

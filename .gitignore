@@ -1,0 +1,32 @@
+# Dependencies
+/node_modules
+
+# Next.js build output
+/.next/
+/out/
+/src/generated/build-info.ts
+
+# Test and coverage output
+/coverage/
+
+# Runtime logs
+*.log
+app.log
+
+# Local environment files (an empty .env.example may be committed)
+.env
+.env.*
+!.env.example
+
+# Runtime-generated schema artifacts
+/schemas/
+
+# TypeScript and tooling
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,11 @@
+import { describe,expect,test } from "bun:test";
+import { assessMysqlGrants } from "./parse-mysql-grants";
+const assess=(grants:string[],currentUser="db_analysis@10.0.0.10")=>assessMysqlGrants({connectionId:1,targetDatabase:"dandorak",currentUser,loginUser:"db_analysis@10.0.0.20",grants,metadataReadable:true});
+describe("MySQL grant assessment",()=>{
+ test("accepts target-only SELECT",()=>{const r=assess(["GRANT SELECT, SHOW VIEW ON `dandorak`.* TO `db_analysis`@`10.0.0.10`"]);expect(r.readOnlyAssessment.riskLevel).toBe("safe");expect(r.readOnlyAssessment.isReadOnly).toBe(true);expect(r.scope.hasTargetDatabaseSelect).toBe(true);});
+ test("warns on global SELECT",()=>{const r=assess(["GRANT SELECT ON *.* TO `db_analysis`@`10.0.0.10`"]);expect(r.readOnlyAssessment.riskLevel).toBe("warning");expect(r.scope.hasGlobalPrivileges).toBe(true);});
+ test("marks writes and DDL critical",()=>{for(const grant of ["GRANT SELECT, INSERT, UPDATE, DELETE ON `dandorak`.* TO `db_analysis`@`10.0.0.10`","GRANT SELECT, CREATE, ALTER, DROP ON `dandorak`.* TO `db_analysis`@`10.0.0.10`"])expect(assess([grant]).readOnlyAssessment.riskLevel).toBe("critical");});
+ test("detects ALL, GRANT OPTION and wildcard host",()=>{const r=assess(["GRANT ALL PRIVILEGES ON *.* TO `db_analysis`@`%` WITH GRANT OPTION"],"db_analysis@%");expect(r.riskyPrivileges).toContain("ALL PRIVILEGES");expect(r.riskyPrivileges).toContain("GRANT OPTION");expect(r.authenticatedAccount.hostRestriction).toBe("wildcard");expect(r.readOnlyAssessment.riskLevel).toBe("critical");});
+ test("detects cross database and missing target SELECT",()=>{const r=assess(["GRANT SELECT ON `other_database`.* TO `db_analysis`@`10.0.0.10`"]);expect(r.scope.hasCrossDatabasePrivileges).toBe(true);expect(r.scope.hasTargetDatabaseSelect).toBe(false);expect(r.readOnlyAssessment.riskLevel).toBe("warning");});
+ test("does not call unknown or role grants safe",()=>{const unknown=assess(["GRANT FUTURE_PRIVILEGE ON `dandorak`.* TO `db_analysis`@`10.0.0.10`"]),role=assess(["GRANT `analysis_role`@`%` TO `db_analysis`@`10.0.0.10`"]);expect(unknown.unknownPrivileges).toContain("FUTURE_PRIVILEGE");expect(unknown.readOnlyAssessment.riskLevel).toBe("unknown");expect(role.readOnlyAssessment.riskLevel).toBe("unknown");});
+});
