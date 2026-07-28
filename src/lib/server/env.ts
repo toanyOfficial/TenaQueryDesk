@@ -29,6 +29,12 @@ export type DbCredentialEncryptionEnvironment = Readonly<{
   key: Uint8Array<ArrayBuffer>;
 }>;
 
+export type QueryEnvironment = Readonly<{
+  maxRows: number;
+  timeoutMs: number;
+  maxSqlLength: number;
+}>;
+
 /** Step 3에서 로그인과 세션 기능이 호출할 때 검증합니다. */
 export function getAuthEnvironment(): AuthEnvironment {
   return Object.freeze({
@@ -65,4 +71,14 @@ export function getDbCredentialEncryptionEnvironment(): DbCredentialEncryptionEn
       32,
     ),
   });
+}
+
+export function getQueryEnvironment(): QueryEnvironment {
+  const maxRows = Number(process.env.QUERY_MAX_ROWS || "1000");
+  const timeoutMs = Number(process.env.QUERY_TIMEOUT_MS || "10000");
+  const maxSqlLength = Number(process.env.QUERY_MAX_SQL_LENGTH || "100000");
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10000) throw new Error("QUERY_MAX_ROWS는 1~10,000 범위의 정수여야 합니다.");
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 120000) throw new Error("QUERY_TIMEOUT_MS는 1,000~120,000 범위의 정수여야 합니다.");
+  if (!Number.isSafeInteger(maxSqlLength) || maxSqlLength < 1000 || maxSqlLength > 1000000) throw new Error("QUERY_MAX_SQL_LENGTH는 1,000~1,000,000 범위의 정수여야 합니다.");
+  return Object.freeze({ maxRows, timeoutMs, maxSqlLength });
 }

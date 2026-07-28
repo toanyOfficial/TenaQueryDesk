@@ -108,6 +108,14 @@ GPT는 대상 DB에 접속하지 않고 최신 성공 스키마 파일만 사용
 
 다만 루트 `schema.md`가 없어 `analysis_history`의 실제 컬럼·enum·인덱스·FK를 확인할 수 없으므로 repository SQL과 request type 매핑을 추측해 작성하지 않았습니다. 인증된 목록·상세 API는 파라미터 검증 후 현재 `503`을 반환합니다. 실제 구조가 제공되면 완료 후 단일 INSERT 정책으로 질문, 유형, 답변, SQL, 모델, 성공·실패와 안전한 오류만 저장하고 API 키, 접속정보, 시스템 프롬프트, 전체 스키마, 절대경로와 stack trace는 저장하지 않습니다. 이력 저장 자체가 실패해도 성공한 GPT 결과는 `analysisHistoryId: null`과 제한된 경고로 반환하는 비차단 정책을 적용해야 합니다. 삭제·수정·자동 정리 기능은 제공하지 않습니다.
 
+## SELECT 실행 정책 기반
+
+실행 API 경계는 `/api/query/execute`이며 브라우저에서는 `connectionId`, SQL, 선택적 `analysisHistoryId`만 전송합니다. SQL은 문자열·길이·제어문자 검사 후 문자열과 주석을 구분하는 syntax-aware lexer로 단일 statement를 확인하고 SELECT 또는 `WITH ... SELECT`만 허용합니다. CTE, JOIN, 서브쿼리와 UNION은 허용하되 DDL/DML, 다중 statement, 사용자 변수, `INTO OUTFILE`·`INTO DUMPFILE`, `LOAD_FILE`, `FOR UPDATE`, 잠금, 시스템 schema와 다른 DB prefix는 차단합니다. 이 lexer는 완전한 MySQL AST parser를 대신하지 않으므로 parser 의존성을 설치·검증하기 전에는 API가 실제 DB 실행으로 진행하지 않습니다.
+
+서버 기본 제한은 최대 SQL 100,000자, 실행 10초, 반환 1,000행입니다. 최상위 LIMIT이 없으면 1,001행을 요청하고, 더 큰 LIMIT은 1,001로 줄인 뒤 실제 응답을 1,000행으로 잘라 정확한 `truncated` 상태를 계산합니다. BigInt는 문자열, 날짜는 ISO 문자열, Buffer는 크기 표시, null은 그대로 반환하며 단일 셀은 100,000자를 넘으면 축약합니다. 실행 모듈은 pool에서 단일 connection을 얻고 정상 완료 시 release하며 드라이버 timeout이면 해당 connection만 destroy하도록 준비했습니다. Step 11에는 사용자가 제출한 SQL과 서버가 실제 실행한 SQL을 구분하여 후자를 실행 이력에 우선 저장합니다.
+
+현재 저장소에는 Step 4의 활성 대상 DB repository와 connection별 pool이 없으므로 실행 API는 인증과 입력·SELECT 정책 검증 후 `503`을 반환합니다. 실제 연결이 제공되면 반드시 `multipleStatements: false`, SELECT 및 metadata 최소 권한만 가진 읽기 전용 계정을 사용해야 합니다. INSERT·UPDATE·DELETE·DDL 권한을 부여하지 않고 가능하면 Read Replica나 분석 전용 DB를 사용해야 하며, 앱 검증을 DB 권한의 대체물로 간주하지 않습니다. GPT SQL은 편집기에만 반영되고 사용자가 실행 버튼 또는 F5를 명시적으로 눌러야 요청되며 자동 실행되지 않습니다.
+
 ## 프로덕션 빌드 및 실행
 
 ```bash

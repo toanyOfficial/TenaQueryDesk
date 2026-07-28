@@ -26,10 +26,13 @@ export type AnalysisMessage = Readonly<{
 }>;
 
 export type QueryResult = Readonly<{
-  columns: ReadonlyArray<string>;
+  columns: ReadonlyArray<Readonly<{ name: string; type: string }>>;
   rows: ReadonlyArray<Readonly<Record<string, unknown>>>;
   rowCount: number;
-  durationMs: number;
+  executionMs: number;
+  truncated: boolean;
+  warnings: ReadonlyArray<string>;
+  referencedTables: ReadonlyArray<string>;
 }>;
 
 export type QueryStatus = "idle" | "running" | "success" | "empty" | "error";
