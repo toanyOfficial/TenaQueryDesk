@@ -1,0 +1,11 @@
+import { describe, expect, test } from "bun:test";
+import { validateSelectQuery } from "./validate-select-query";
+const valid = (sql:string) => { const result=validateSelectQuery(sql,"sales",1000); expect(result.valid).toBeTrue(); return result.valid ? result : null; };
+const invalid = (sql:string, code?:string) => { const result=validateSelectQuery(sql,"sales",1000); expect(result.valid).toBeFalse(); if(!result.valid && code) expect(result.errorCode).toBe(code); };
+describe("SELECT policy",()=>{
+ test("allows SELECT, comments, literals, CTE, JOIN and UNION",()=>{ valid("-- note\nSELECT id FROM clients LIMIT 100;"); valid("SELECT ';' AS value FROM clients"); valid("WITH c AS (SELECT id FROM clients) SELECT * FROM c"); valid("SELECT c.id FROM clients c JOIN orders o ON o.client_id=c.id"); valid("SELECT id FROM table_a UNION ALL SELECT id FROM table_b"); });
+ test("blocks mutation, multiple statements and dangerous SELECT",()=>{ invalid("UPDATE clients SET x=1","NOT_SELECT"); invalid("SELECT * FROM clients; DELETE FROM clients","MULTIPLE_STATEMENTS"); invalid("SELECT * INTO OUTFILE '/tmp/x' FROM clients","DANGEROUS_SELECT"); invalid("SELECT LOAD_FILE('/etc/passwd')","DANGEROUS_SELECT"); invalid("SELECT * FROM clients FOR UPDATE","DANGEROUS_SELECT"); invalid("CALL p()","NOT_SELECT"); invalid("SELECT @x := 1","SESSION_VARIABLE"); });
+ test("blocks cross-database and system schemas",()=>{ invalid("SELECT * FROM other.clients","CROSS_DATABASE"); invalid("SELECT * FROM information_schema.tables","CROSS_DATABASE"); expect(valid("SELECT * FROM sales.clients")?.referencedTables).toEqual(["clients"]); });
+ test("applies and caps top-level LIMIT",()=>{ expect(valid("SELECT * FROM clients")?.executedSql).toEndWith("LIMIT 1001"); expect(valid("SELECT * FROM clients LIMIT 100")?.executedSql).toBe("SELECT * FROM clients LIMIT 100"); expect(valid("SELECT * FROM clients LIMIT 5000")?.executedSql).toBe("SELECT * FROM clients LIMIT 1001"); expect(valid("SELECT * FROM clients LIMIT 20, 5000")?.executedSql).toBe("SELECT * FROM clients LIMIT 20, 1001"); });
+ test("rejects malformed and excessive input",()=>{ invalid("SELECT '\u0000'","CONTROL_CHARACTER"); invalid("SELECT ("); invalid(" ","EMPTY_SQL"); expect(validateSelectQuery(`SELECT '${"x".repeat(1000)}'`, "sales", 1000, 100)).toMatchObject({valid:false,errorCode:"SQL_TOO_LONG"}); });
+});
