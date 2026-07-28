@@ -4,6 +4,7 @@
 # Next.js build output
 /.next/
 /out/
+/src/generated/build-info.ts
 
 # Test and coverage output
 /coverage/

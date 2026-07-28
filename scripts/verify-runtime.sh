@@ -11,7 +11,16 @@ failed=0
 section() { printf '\n== %s ==\n' "$1"; }
 
 section "Git HEAD"
-git rev-parse --short HEAD 2>/dev/null || { printf 'Git HEAD를 확인하지 못했습니다.\n'; failed=1; }
+head_commit="$(git rev-parse --short HEAD 2>/dev/null)" || { printf 'Git HEAD를 확인하지 못했습니다.\n'; failed=1; head_commit=""; }
+[[ -n "$head_commit" ]] && printf '%s\n' "$head_commit"
+
+section "Git 필수 파일"
+if command -v bun >/dev/null 2>&1; then
+  bun run verify:files || failed=1
+else
+  printf 'Bun이 없어 필수 파일 검증을 실행하지 못했습니다.\n'
+  failed=1
+fi
 
 section "런타임 파일 (내용은 출력하지 않음)"
 for path in .env schemas app.log; do
@@ -42,8 +51,21 @@ fi
 
 section "HTTP health"
 if command -v curl >/dev/null 2>&1; then
-  curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:${port}/api/health" || { printf '\nhealth 응답에 실패했습니다.\n'; failed=1; }
-  printf '\n'
+  health_json="$(curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:${port}/api/health")" || { printf '\nhealth 응답에 실패했습니다.\n'; failed=1; health_json=""; }
+  [[ -n "$health_json" ]] && printf '%s\n' "$health_json"
+  health_commit=""
+  if [[ -n "$health_json" ]] && command -v bun >/dev/null 2>&1; then
+    health_commit="$(printf '%s' "$health_json" | bun -e 'const x=JSON.parse(await Bun.stdin.text()); if(typeof x?.build?.commit!=="string") process.exit(1); process.stdout.write(x.build.commit)')" || true
+  fi
+  if [[ -z "$health_commit" || "$health_commit" == "unknown" ]]; then
+    printf 'health build commit을 확인하지 못했습니다.\n'
+    failed=1
+  elif [[ -n "$head_commit" && "$health_commit" != "$head_commit" ]]; then
+    printf '불일치: server HEAD=%s, health build=%s\n' "$head_commit" "$health_commit"
+    failed=1
+  else
+    printf '일치: server HEAD=%s, health build=%s\n' "$head_commit" "$health_commit"
+  fi
 else
   printf 'curl이 없어 health 응답을 확인하지 못했습니다.\n'
   failed=1

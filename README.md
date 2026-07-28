@@ -281,3 +281,57 @@ sudo chown -R appuser:appuser /srv/PROJECT_NAME/schemas
 ```
 
 `rm -rf .next`는 `schemas/`에 영향을 주지 않습니다. `app.log`는 Auto Deploy의 `> app.log 2>&1`가 관리하며 애플리케이션이 같은 파일을 별도로 열거나 자체 log rotation 프로세스를 실행하지 않습니다. 로그에는 API 키, DB 비밀번호, 세션 토큰, 전체 질문 또는 전체 SQL을 남기지 않습니다. 보존과 rotation은 서버 운영 영역에서 설정합니다.
+
+## Step 17 배포 버전과 필수 파일 검증
+
+`bun run build`는 먼저 Git 필수 파일을 검증하고 build metadata를 만든 다음 `next build`만 실행합니다. metadata는 외부 `BUILD_COMMIT_SHA`의 유효한 SHA를 가장 먼저 사용하고, 없으면 `git rev-parse HEAD`, 둘 다 사용할 수 없으면 `unknown`을 기록합니다. 빌드 시각은 UTC ISO 문자열이며 dirty는 untracked `.env`, `schemas/`, `app.log`가 아니라 tracked 및 staged diff만 판정합니다. 생성 파일 `src/generated/build-info.ts`는 Git에서 제외되고 Next build artifact에 포함됩니다.
+
+```bash
+bun run verify:files
+bun run build:meta
+bun run build
+```
+
+Git이 없는 source archive에서도 실제 파일 검증은 수행하되 index/HEAD 검증은 `skipped`로 표시합니다. 이때 외부 SHA가 없으면 health의 commit source는 `unknown`이며 운영 배포 완료 판정에 사용할 수 없습니다. build metadata 생성은 서버, DB, 스키마 또는 OpenAI에 연결하지 않습니다.
+
+`GET /api/health`의 `build`는 short/full commit, build time, metadata source, tracked dirty 여부와 required-file manifest version을 반환합니다. 관리 화면의 **애플리케이션 런타임** 영역에는 short commit, 빌드 시각, uptime과 환경을 표시합니다. Git remote, credential, author/email, commit message, repository path는 API에 포함하지 않습니다.
+
+### 필수 Git 파일과 런타임 파일 구분
+
+`config/required-files.json`은 현재 저장소에 실제 존재하는 운영 핵심 소스·설정만 필수로 관리합니다. 검증기는 각 필수 경로에 대해 다음 세 상태를 독립적으로 확인하며 파일 내용은 출력하지 않습니다.
+
+1. working tree에 일반 파일로 존재하는가
+2. `git ls-files --error-unmatch`로 index에 추적되는가
+3. `git cat-file -e HEAD:PATH`로 현재 commit에 포함되는가
+
+working tree에만 있거나 staged만 된 파일은 배포 가능한 `HEAD`에 포함되지 않았으므로 실패합니다. 현재 저장소에 없는 `schema.md`와 Bun lock 파일은 manifest의 optional 경고로 명시했습니다. 운영 완성 전에는 두 파일의 필요성과 출처를 확인해야 하지만, 존재하지 않는 내용을 이번 단계에서 추측 생성하지 않았습니다. `.env`, `schemas/`, `.next/`, `node_modules/`, `app.log`는 Git 필수 파일이 아니며 `verify-runtime.sh` 또는 설치/build 단계에서 별도로 확인합니다.
+
+### 서버 source와 실행 build 비교
+
+```bash
+cd /srv/PROJECT_NAME
+git fetch --all
+git rev-parse --short HEAD
+git rev-parse --short TARGET_REF
+git status --short
+bun run verify:files
+curl -s http://127.0.0.1:PROJECT_PORT/api/health
+bash scripts/verify-runtime.sh PROJECT_PORT
+```
+
+health short commit과 `git rev-parse --short HEAD`가 같으면 현재 source tree로 빌드된 프로세스일 가능성이 높습니다. 다르면 이전 프로세스 잔존, 새 build 후 start 실패, HEAD만 변경됨, 다른 디렉터리·ref에서 실행, 다른 reverse proxy 대상, metadata fallback 등을 확인합니다. 포트 기준 kill을 추가하지 말고 health PID, LISTEN PID, Git HEAD와 `app.log`를 함께 대조합니다.
+
+기대 commit과 실제 배포 ref의 관계는 다음 읽기 전용 명령으로 확인합니다. `TARGET_REF`는 무조건 `origin/main`이 아니라 실제 Auto Deploy 설정값이어야 합니다.
+
+```bash
+git log --oneline -10
+git branch -a --contains EXPECTED_COMMIT
+git merge-base --is-ancestor EXPECTED_COMMIT TARGET_REF
+git ls-tree -r --name-only HEAD | grep 'FILE_PATH'
+git show --stat --oneline EXPECTED_COMMIT
+git show EXPECTED_COMMIT -- FILE_PATH
+```
+
+`branch --contains`에 target branch가 없거나 `merge-base --is-ancestor`가 실패하면 PR이 아직 merge되지 않았거나 다른 ref에만 있는 상태입니다. `ls-tree HEAD`에 안내된 script가 없으면 서버 reset 후에도 해당 파일이 생기지 않는 것이 정상이며 앱 설정 문제로 오판하지 않습니다. 로컬 commit과 PR 생성은 targetRef merge를 뜻하지 않으므로 merge 여부를 별도로 확인해야 합니다.
+
+코드 작업 완료 보고에는 실제 commit SHA, 작업 branch, 변경 파일, `git status --short`, `git show --stat --oneline HEAD`, 중요 파일의 HEAD 포함 여부, PR 생성 여부를 포함해야 합니다. PR merge와 targetRef 포함 여부, 접근하지 못한 운영 서버 상태는 별도 확인 대상으로 명시합니다.

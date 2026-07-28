@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run verify:files && bun run build:meta && next build",
+    "build:meta": "bun scripts/generate-build-info.ts",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun run build:meta && tsc --noEmit",
+    "verify:files": "bun scripts/verify-required-files.ts",
     "test": "bun test"
   },
   "dependencies": {
