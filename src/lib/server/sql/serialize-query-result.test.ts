@@ -1,0 +1,3 @@
+import { describe, expect, test } from "bun:test";
+import { serializeCell, serializeRows } from "./serialize-query-result";
+describe("query serialization",()=>{ test("handles bigint, dates, null, binary, JSON and Korean",()=>{ expect(serializeCell(BigInt(10)).value).toBe("10"); expect(serializeCell(new Date("2026-01-01T00:00:00Z")).value).toBe("2026-01-01T00:00:00.000Z"); expect(serializeCell(null).value).toBeNull(); expect(serializeCell(Buffer.from([1,2])).value).toBe("[binary 2 bytes]"); expect(serializeCell({ text:"한글" }).value).toEqual({text:"한글"}); }); test("counts truncated cells",()=>{ expect(serializeRows([{value:"x".repeat(100001)}]).truncatedCells).toBe(1); }); });
