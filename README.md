@@ -231,3 +231,53 @@ OpenAI 설정은 `src/lib/server/openai/config.ts`를 통해 실제 GPT 요청 �
 인증된 `/api/admin/openai/status`는 API 키의 존재 여부만 내부에서 확인하며 키 값이나 일부 문자를 반환하지 않습니다. 모델명, timeout, 출력 한도, 재시도 및 설정 issue만 표시합니다. 실제 연결 테스트는 비용과 rate limit을 발생시키므로 이번 단계에서는 추가하지 않았고 기존 실제 GPT 요청으로만 확인합니다. `analysis_history` repository가 아직 없어 최근 성공·실패는 `확인하지 못함`으로 표시합니다.
 
 운영에서는 개인 임시 키를 공유하지 말고 개발·테스트·운영별 OpenAI 프로젝트 전용 키와 프로젝트 budget/usage limit을 사용해야 합니다. 키는 운영 서버의 권한 `600` `.env`에만 두고 Git, 브라우저와 로그에 기록하지 않습니다. 노출이 의심되면 즉시 폐기하고 재발급합니다. 전체 사용자 질문, 시스템 프롬프트, schema context, assistant 답변과 SQL도 일반 로그에 출력하지 않습니다. OpenAI 장애는 GPT 패널에만 영향을 주며 로그인, 관리, 권한 점검, 직접 SQL 작성과 SELECT 실행 경로를 초기화하거나 중단하지 않습니다.
+
+## Step 16 Auto Deploy 런타임 운영
+
+배포 runtime은 `nextjs_bun`입니다. `build`는 `next build`, `start`는 `next start`만 직접 실행하며 커스텀 HTTP 서버, 내부 `nohup`, 중첩 shell, background 실행, PM2/supervisor, 자체 재시작 또는 포트 종료 로직을 두지 않습니다. Auto Deploy가 외부에서 로그 리다이렉션과 background 실행을 담당하므로 프로젝트 서버는 foreground 프로세스로 동작합니다. 실제 포트는 코드 fallback이 아니라 Auto Deploy가 주입하는 `PORT`만 사용합니다.
+
+```bash
+bun run build
+PORT=PROJECT_PORT bun run start -H 0.0.0.0
+```
+
+최초 clone에는 `node_modules`가 없으므로 Auto Deploy가 의존성을 별도로 설치하지 않는다면 빌드 전에 `bun install --frozen-lockfile`이 필요합니다. 다만 현재 저장소에는 Bun lock 파일이 없으므로 운영 등록 전에 신뢰 가능한 환경에서 lock 파일을 생성·검토·커밋해야 하며, 그 전에는 frozen 설치 명령이 성공한다고 간주할 수 없습니다. 설치를 `start` script에 넣지 않습니다.
+
+### 공개 health와 읽기 전용 진단
+
+`GET /api/health`는 인증 없이 로드밸런서가 사용할 수 있는 최소 응답으로 service, PID, uptime, `NODE_ENV`, 의도된 `PORT`만 반환합니다. build commit/time은 Step 17을 위한 `null` 자리만 제공합니다. 환경변수 목록, 부모 프로세스, 명령줄, 절대경로와 비밀정보는 반환하지 않습니다. 응답의 port는 설정 의도일 뿐 실제 LISTEN FD 소유를 증명하지 않습니다.
+
+서버에서는 사람이 다음 읽기 전용 진단을 명시적으로 실행합니다. 스크립트는 프로세스를 종료·재시작하지 않고 `.env` 내용도 읽어 출력하지 않습니다.
+
+```bash
+cd /srv/PROJECT_NAME
+bash scripts/verify-runtime.sh PROJECT_PORT
+
+ps -eo pid,ppid,pgid,sid,user,stat,cmd \
+  | grep -E 'auto_deploy|PROJECT_NAME|bun|node|php' \
+  | grep -v grep
+sudo lsof -iTCP:9090 -n -P
+sudo lsof -iTCP:PROJECT_PORT -n -P
+sudo ss -ltnp | grep -E ':9090|:PROJECT_PORT|php|bun|node'
+git rev-parse --short HEAD
+ls -la /srv/PROJECT_NAME
+ls -ld /srv/PROJECT_NAME/schemas
+ls -l /srv/PROJECT_NAME/.env
+```
+
+정상 상태에서는 9090을 Auto Deploy PHP만 소유하고, Tena Query Desk의 Bun/Node/Next 프로세스는 프로젝트 포트만 LISTEN하며, 같은 프로젝트 서버가 중복되지 않습니다. `/api/health`가 응답하고 `app.log` 최근 구간에 `EADDRINUSE`가 없어야 하며 `.env`가 존재하고 `schemas/`에 `appuser` 쓰기 권한이 있어야 합니다. Step 17 이후에는 health commit과 서버 Git HEAD도 일치해야 합니다.
+
+프로젝트 프로세스가 프로젝트 포트와 9090을 함께 보유하거나, 불필요한 shell 계층·중복 서버·반복 `EADDRINUSE`가 보이면 비정상입니다. 프로젝트에 포트 기반 종료나 `/proc/self/fd` 일괄 close 우회를 추가하지 말고 정상 프로젝트와 Auto Deploy 자식 실행 방식을 비교해야 합니다. 9090 FD 상속은 부모 Auto Deploy 실행기가 자식 실행 전에 불필요한 FD를 닫지 않아 발생할 수 있으며 프로젝트 코드만으로 완전히 해결할 수 없습니다. Auto Deploy 저장소에서 self reboot를 포트 기준 종료가 아닌 전용 pidfile 기준으로 바꾸고, PHP 실행기가 자식에게 불필요한 LISTEN FD를 상속하지 않도록 별도로 수정해야 합니다.
+
+### 런타임 파일 생존성과 권한
+
+`.env`, `.env.local`, `schemas/` 생성물과 `app.log`는 Git에서 제외됩니다. 현재 `git reset --hard` 및 `.next` 삭제만으로는 비추적 파일이 일반적으로 유지되지만, 향후 `git clean` 추가나 서버 디스크 손실까지 보장하지 않으므로 `.env`의 안전한 별도 백업과 schema artifact 백업 정책이 필요합니다. 실제 서버 준비 예시는 다음과 같으며 비밀값 자체를 문서나 Git에 기록하지 않습니다.
+
+```bash
+sudo chown appuser:appuser /srv/PROJECT_NAME/.env
+sudo chmod 600 /srv/PROJECT_NAME/.env
+sudo mkdir -p /srv/PROJECT_NAME/schemas
+sudo chown -R appuser:appuser /srv/PROJECT_NAME/schemas
+```
+
+`rm -rf .next`는 `schemas/`에 영향을 주지 않습니다. `app.log`는 Auto Deploy의 `> app.log 2>&1`가 관리하며 애플리케이션이 같은 파일을 별도로 열거나 자체 log rotation 프로세스를 실행하지 않습니다. 로그에는 API 키, DB 비밀번호, 세션 토큰, 전체 질문 또는 전체 SQL을 남기지 않습니다. 보존과 rotation은 서버 운영 영역에서 설정합니다.
