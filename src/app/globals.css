@@ -537,3 +537,12 @@ textarea {
 .admin-modal dt { color: #6b7782; }
 .admin-modal dd { margin: 0; }
 .admin-modal pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.risk-badge { display: inline-flex; width: fit-content; margin: 5px 0; padding: 3px 7px; border-radius: 4px; background: #e9f2f1; color: #2c5954; font-size: 11px; }
+.risk-badge--data_change, .risk-badge--schema_change { background: #fff1d9; color: #8a5100; }
+.risk-badge--destructive { background: #fde5e5; color: #9e2929; }
+.guidance-section, .execution-plan section { margin-top: 8px; padding: 8px; border-left: 3px solid #d2a149; background: #fffaf0; }
+.guidance-section p { margin: 4px 0 0; }
+.execution-plan { display: grid; gap: 5px; }
+.execution-plan pre { margin: 5px 0 0; padding: 6px; overflow-wrap: anywhere; white-space: pre-wrap; background: #202b33; color: #edf4f7; font-size: 11px; }
+.reference-sql-warning { background: #fff4df; color: #7c4800; }

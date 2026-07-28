@@ -188,3 +188,13 @@ SQL 실행 이력은 대상 DB에 **실제로 전달된 단일 SELECT**의 성�
 - 관리 DB와 대상 DB 네트워크 접근을 확인하고 대상 DB 계정에는 SELECT 및 필요한 metadata 최소 권한만 부여합니다.
 - `APP_PASSWORD_HASH`, `SESSION_SECRET`, 관리 DB 설정, `DB_CREDENTIAL_ENCRYPTION_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL` 및 쿼리 제한 설정을 서버 환경에 배치합니다.
 - 운영 전 반드시 실제 `schema.md` 계약, 대상 DB CRUD/pool, 스키마 수집·snapshot repository, GPT 이력, 실행 이력과 관리 API를 연결하고 전체 흐름을 테스트합니다.
+
+## Step 13 GPT 변경 SQL 안전 제안 정책
+
+사이트 실행 API는 이전과 동일하게 서버에서 검증한 **단일 SELECT 계열만** 허용합니다. GPT가 제안하는 INSERT·UPDATE·DELETE·REPLACE·CREATE·ALTER·DROP·TRUNCATE 등은 `ddl_dml_reference` 참고 자료이며 자동 실행되지 않습니다. 편집기 역시 변경 SQL 출처를 표시하고 실행 버튼을 비활성화하지만, 최종 보안 경계는 프론트 표시가 아니라 서버 SELECT 검증입니다.
+
+구조화 응답은 `riskLevel`(`read_only`, `data_change`, `schema_change`, `destructive`), 트랜잭션 안내와 실행 계획(사전 점검, 단계별 변경, 사후 검증, ROLLBACK 또는 복구)을 분리합니다. DML은 트랜잭션 지원 엔진의 같은 업무 단위에 한해 트랜잭션을 권고하며, 중간 오류가 자동 ROLLBACK되는 것은 아니므로 COMMIT하지 않고 같은 세션에서 ROLLBACK해야 합니다. 엔진, 외부 작업 또는 여러 DB 서버의 원자성은 가정하지 않습니다.
+
+MySQL DDL은 암시적 COMMIT이 발생할 수 있어 여러 DDL이나 DDL·DML 혼합 작업의 전체 롤백을 보장하지 않습니다. DDL은 백업·의존성·잠금·데이터 호환성을 먼저 확인하고 한 단계씩 실행 및 검증하며, 역변경 SQL도 데이터 복원을 보장하지 않습니다. DROP, TRUNCATE, 컬럼 삭제, 타입 축소와 대량 삭제는 파괴적 변경으로 분류하고 별도 승인과 백업 복구를 요구합니다. 실제 운영 변경은 이 사이트 밖의 승인된 절차와 읽기/쓰기 권한이 분리된 도구에서 수행해야 합니다.
+
+응답 validator는 위험도 allowlist, 변경 계획의 네 섹션, 파괴적 변경 경고, WHERE 없는 UPDATE/DELETE, COMMIT만 있고 ROLLBACK 안내가 없는 DML, DDL 전체 롤백을 보장하는 표현을 거부합니다. 안전 검증에 실패한 응답은 사용자에게 실행 절차로 노출하지 않으며 자동 보정 재호출도 하지 않습니다. 별도 `analysis_history` 컬럼을 추가하지 않고 기존 request type·답변·생성 SQL 저장 계약을 유지하되, 실제 매핑은 누락된 `schema.md`가 제공된 후 확인해야 합니다.

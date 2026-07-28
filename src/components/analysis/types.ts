@@ -23,6 +23,10 @@ export type AnalysisMessage = Readonly<{
   assumptions?: ReadonlyArray<string>;
   warnings?: ReadonlyArray<string>;
   sqlApplied?: boolean;
+  requestType?: "select" | "schema_explanation" | "ddl_dml_reference";
+  riskLevel?: SqlRiskLevel;
+  transactionGuidance?: Readonly<{ applicable: boolean; summary: string | null }>;
+  executionPlan?: ExecutionPlan | null;
 }>;
 
 export type QueryResult = Readonly<{
@@ -89,11 +93,10 @@ export type QueryHistoryDetail = Readonly<{
   createdAt: string;
 }>;
 
+export type SqlRiskLevel = "read_only" | "data_change" | "schema_change" | "destructive";
+export type ExecutionPlan = Readonly<{ preChecks: ReadonlyArray<string>; statements: ReadonlyArray<string>; postChecks: ReadonlyArray<string>; rollbackOrRecovery: ReadonlyArray<string> }>;
 export type GeneratedQueryResponse = Readonly<{
   requestType: "select" | "schema_explanation" | "ddl_dml_reference";
-  answer: string;
-  sql: string | null;
-  referencedTables: ReadonlyArray<string>;
-  assumptions: ReadonlyArray<string>;
-  warnings: ReadonlyArray<string>;
+  answer: string; sql: string | null; referencedTables: ReadonlyArray<string>; assumptions: ReadonlyArray<string>; warnings: ReadonlyArray<string>;
+  riskLevel: SqlRiskLevel; transactionGuidance: Readonly<{ applicable: boolean; summary: string | null }>; executionPlan: ExecutionPlan | null;
 }>;
