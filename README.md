@@ -33,6 +33,7 @@ bun run dev
 | `APP_PASSWORD_HASH` | Step 3 공용 로그인에서 사용할 원문이 아닌 비밀번호 해시 |
 | `SESSION_SECRET` | Step 3 세션 서명·검증에 사용할 32자 이상의 무작위 문자열 |
 | `OPENAI_API_KEY` | Step 8 OpenAI 서버 호출용 API 키 |
+| `OPENAI_MODEL` | 서버에서 사용할 구조화 출력 지원 OpenAI 모델명 |
 | `MANAGEMENT_DB_HOST` | 관리 MySQL 호스트 |
 | `MANAGEMENT_DB_PORT` | 관리 MySQL 포트, 미입력 시 `3306` |
 | `MANAGEMENT_DB_NAME` | 관리 DB 이름 |
@@ -93,7 +94,11 @@ curl -i http://localhost:3000/api/health/management-db
 
 화면은 인증된 API `/api/db-connections`에서 활성 DB의 ID·표시명만 조회하고 첫 항목을 기본 선택하도록 준비되어 있습니다. DB가 변경되면 다른 DB에서 작성한 쿼리를 실수로 사용하는 일을 막기 위해 질문, SQL, 결과와 오류 상태를 모두 초기화합니다. 선택한 DB의 최신 상태는 `/api/db-connections/{id}/schema/snapshots?limit=1` 연결 지점으로 분리했습니다. 현재 두 API는 선행 단계의 `schema.md` 부재로 구현되지 않았으므로 화면은 안전한 조회 실패 안내를 표시하며 접속정보를 대체 입력으로 요구하지 않습니다.
 
-질문 입력과 textarea 기반 SQL 편집, 결과 테이블 상태 모델은 Step 8~11 연결을 위해 마련했지만 GPT 전송과 쿼리 실행 버튼은 의도적으로 비활성화되어 있습니다. 브라우저 저장소에는 선택 ID, 질문, SQL, 결과 또는 인증정보를 저장하지 않으며 DB host·username·password와 스키마 원문도 클라이언트 상태에 포함하지 않습니다. 현재 화면 경로는 분석 `/`, 로그인 `/login`이고 관리 화면은 아직 구현되지 않아 헤더의 관리 버튼도 비활성 상태입니다.
+질문 입력은 `/api/analysis/generate`에 선택된 connection ID와 2~5,000자의 질문만 전송하도록 연결했습니다. 처리 중에는 중복 제출을 막고 답변·참조 테이블·가정·경고를 대화에 표시하며, 생성 SQL은 사용자 확인 후 편집기에 반영될 상태 구조를 갖습니다. 기존 SQL이 있으면 요청 전에 교체 확인을 요구하고, 구조 설명에서 SQL이 `null`이면 기존 SQL을 유지합니다. 쿼리 실행 버튼은 Step 10까지 비활성 상태입니다. 브라우저 저장소에는 선택 ID, 질문, SQL, 결과 또는 인증정보를 저장하지 않으며 DB host·username·password와 스키마 원문도 클라이언트 상태에 포함하지 않습니다.
+
+GPT는 대상 DB에 접속하지 않고 최신 성공 스키마 파일만 사용합니다. 서버 탐색기는 manifest와 테이블별 JSON을 검증한 뒤 질문을 테이블명·코멘트·컬럼명·컬럼 코멘트와 비교하고, 직접 FK 관계를 1단계만 확장합니다. 최대 12개 테이블과 직렬화 100,000자로 제한하며 관련 구조를 찾지 못하면 전체 스키마를 대신 전송하지 않습니다. OpenAI 호출은 서버에서만 실행되고 30초 후 중단되며, 모델은 `OPENAI_MODEL` 한 곳에서 설정합니다. 구조화 응답의 참조 테이블이 선별 집합에 실제 존재하는지도 재검증합니다.
+
+현재 저장소에는 `schema.md`, 활성 연결 repository 및 최신 성공 `schema_snapshot` 조회 함수 자체가 없습니다. 따라서 generate API는 인증과 입력 검증까지 수행한 뒤 `503`으로 안전하게 중단하며 OpenAI를 호출하지 않습니다. 이 선행 기능이 제공되면 `loadSchemaBundle()`과 `generateQueryFromSchema()`를 연결할 수 있습니다. Step 9에서는 준비된 모델명·질문·응답·처리시간 결과를 이력에 저장하고, Step 10에서는 생성 SQL에 별도의 SELECT 실행 안전 검증을 적용해야 합니다.
 
 ## 프로덕션 빌드 및 실행
 

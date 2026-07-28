@@ -479,3 +479,8 @@ textarea {
   font-size: 11px;
   text-align: center;
 }
+.message small { display: block; margin-top: 6px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.message .message-warning { color: #9a5f18; }
+.compose-error { margin: 4px 0 -2px; color: #a33f39; font-size: 9px; }
+.question-compose:has(.compose-error) { flex-basis: 168px; }
+.question-compose button:not(:disabled) { cursor: pointer; background: var(--accent); color: white; }

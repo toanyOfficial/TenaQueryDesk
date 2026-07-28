@@ -14,6 +14,7 @@ export type AuthEnvironment = Readonly<{
 
 export type OpenAIEnvironment = Readonly<{
   apiKey: string;
+  model: string;
 }>;
 
 export type ManagementDbEnvironment = Readonly<{
@@ -40,6 +41,7 @@ export function getAuthEnvironment(): AuthEnvironment {
 export function getOpenAIEnvironment(): OpenAIEnvironment {
   return Object.freeze({
     apiKey: requireNonEmpty(process.env, "OPENAI_API_KEY"),
+    model: requireNonEmpty(process.env, "OPENAI_MODEL"),
   });
 }
 

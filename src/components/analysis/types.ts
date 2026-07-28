@@ -19,6 +19,10 @@ export type AnalysisMessage = Readonly<{
   content: string;
   createdAt?: string;
   status?: "pending" | "success" | "failed";
+  referencedTables?: ReadonlyArray<string>;
+  assumptions?: ReadonlyArray<string>;
+  warnings?: ReadonlyArray<string>;
+  sqlApplied?: boolean;
 }>;
 
 export type QueryResult = Readonly<{
@@ -29,3 +33,12 @@ export type QueryResult = Readonly<{
 }>;
 
 export type QueryStatus = "idle" | "running" | "success" | "empty" | "error";
+
+export type GeneratedQueryResponse = Readonly<{
+  requestType: "select" | "schema_explanation" | "ddl_dml_reference";
+  answer: string;
+  sql: string | null;
+  referencedTables: ReadonlyArray<string>;
+  assumptions: ReadonlyArray<string>;
+  warnings: ReadonlyArray<string>;
+}>;
