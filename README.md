@@ -198,3 +198,23 @@ SQL 실행 이력은 대상 DB에 **실제로 전달된 단일 SELECT**의 성�
 MySQL DDL은 암시적 COMMIT이 발생할 수 있어 여러 DDL이나 DDL·DML 혼합 작업의 전체 롤백을 보장하지 않습니다. DDL은 백업·의존성·잠금·데이터 호환성을 먼저 확인하고 한 단계씩 실행 및 검증하며, 역변경 SQL도 데이터 복원을 보장하지 않습니다. DROP, TRUNCATE, 컬럼 삭제, 타입 축소와 대량 삭제는 파괴적 변경으로 분류하고 별도 승인과 백업 복구를 요구합니다. 실제 운영 변경은 이 사이트 밖의 승인된 절차와 읽기/쓰기 권한이 분리된 도구에서 수행해야 합니다.
 
 응답 validator는 위험도 allowlist, 변경 계획의 네 섹션, 파괴적 변경 경고, WHERE 없는 UPDATE/DELETE, COMMIT만 있고 ROLLBACK 안내가 없는 DML, DDL 전체 롤백을 보장하는 표현을 거부합니다. 안전 검증에 실패한 응답은 사용자에게 실행 절차로 노출하지 않으며 자동 보정 재호출도 하지 않습니다. 별도 `analysis_history` 컬럼을 추가하지 않고 기존 request type·답변·생성 SQL 저장 계약을 유지하되, 실제 매핑은 누락된 `schema.md`가 제공된 후 확인해야 합니다.
+
+## Step 14 대상 DB read-only 권한 점검
+
+애플리케이션의 SELECT-only 검증은 최종 방어선이 아닙니다. 대상 DB마다 기존 서비스나 관리자/root 계정과 분리된 분석 전용 계정을 사용하고, 가능하면 분석용 Read Replica를 우선하며 그다음 운영 DB의 전용 read-only 계정을 사용합니다. 기존 애플리케이션 계정 공유는 비권장입니다. 계정마다 별도 비밀번호를 사용하고 host는 분석 서버 IP 또는 제한된 내부 대역으로 제한하며 `'%'`, `GRANT OPTION`, `ALL PRIVILEGES`, 쓰기·DDL·관리 권한을 허용하지 않습니다.
+
+권한 점검은 현재 연결 세션에서 읽기 전용인 `SELECT CURRENT_USER(), USER()`, `SHOW GRANTS FOR CURRENT_USER()`와 제한된 `information_schema` metadata 조회만 수행합니다. INSERT, UPDATE, DELETE, CREATE, DROP, GRANT 또는 REVOKE를 시험하지 않습니다. 대상 DB 전용 SELECT(필요 시 `SHOW VIEW`)만 있고 host가 제한되면 `safe`, 전역 SELECT나 과도한 scope는 `warning`, 쓰기·DDL·관리 권한은 `critical`, 파싱할 수 없거나 role 기반이면 `unknown`입니다. View 정의 권한 부족은 기본 read-only 판정과 별도의 스키마 수집 제한 경고로 표시합니다.
+
+관리 화면의 `권한 점검`은 결과를 브라우저의 현재 페이지 상태에만 유지하며 DB 권한을 저장하거나 자동 변경하지 않습니다. 계정명은 마스킹하고 원본 GRANT, 비밀번호, 암호문과 connection string은 API 요약이나 일반 로그에 포함하지 않습니다. read-only가 아니어도 기존 SELECT 기능을 자동 중단하지 않지만 운영 전 수정이 필요한 위험 상태로 표시합니다. 현재 Step 4 대상 DB repository/pool이 없어 권한 API는 인증과 ID 검증 후 안전한 `503`을 반환하며 실제 점검은 fixture로만 검증했습니다.
+
+DBA가 별도 승인 절차에서 적용할 수 있는 최소 권한 예시는 아래와 같습니다. 모든 값은 실제 값이 아닌 placeholder이며 이 사이트는 해당 SQL을 실행하지 않습니다.
+
+```sql
+CREATE USER 'ANALYSIS_ACCOUNT'@'ANALYSIS_SERVER_IP'
+IDENTIFIED BY 'SEPARATE_STRONG_PASSWORD';
+GRANT SELECT, SHOW VIEW ON `TARGET_DATABASE`.*
+TO 'ANALYSIS_ACCOUNT'@'ANALYSIS_SERVER_IP';
+SHOW GRANTS FOR 'ANALYSIS_ACCOUNT'@'ANALYSIS_SERVER_IP';
+```
+
+`SHOW VIEW`는 View 정의 수집이 실제로 필요한지 검증한 뒤에만 추가합니다. 일반 테이블·FK·index metadata는 해당 DB에 대한 최소 접근으로 확인하고, 부족한 metadata 권한은 스키마 수집 제한으로 별도 처리합니다. 실제 권한 생성·변경·회수는 DBA 또는 운영자가 수행해야 합니다.
