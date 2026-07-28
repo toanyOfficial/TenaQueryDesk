@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   readPort,
+  requireBase64Bytes,
   requireMinimumLength,
   requireNonEmpty,
 } from "@/lib/server/env-validation";
@@ -24,7 +25,7 @@ export type ManagementDbEnvironment = Readonly<{
 }>;
 
 export type DbCredentialEncryptionEnvironment = Readonly<{
-  key: string;
+  key: Uint8Array<ArrayBuffer>;
 }>;
 
 /** Step 3에서 로그인과 세션 기능이 호출할 때 검증합니다. */
@@ -56,7 +57,7 @@ export function getManagementDbEnvironment(): ManagementDbEnvironment {
 /** Step 4에서 대상 DB 자격증명을 암복호화할 때 검증합니다. */
 export function getDbCredentialEncryptionEnvironment(): DbCredentialEncryptionEnvironment {
   return Object.freeze({
-    key: requireMinimumLength(
+    key: requireBase64Bytes(
       process.env,
       "DB_CREDENTIAL_ENCRYPTION_KEY",
       32,

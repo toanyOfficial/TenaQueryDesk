@@ -49,3 +49,25 @@ export function readPort(
 
   return port;
 }
+
+export function requireBase64Bytes(
+  source: Environment,
+  name: string,
+  expectedBytes: number,
+): Uint8Array<ArrayBuffer> {
+  const value = requireNonEmpty(source, name);
+
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+    throw new Error(`서버 환경변수 ${name}은(는) 올바른 Base64 형식이어야 합니다.`);
+  }
+
+  const decoded = Uint8Array.from(Buffer.from(value, "base64"));
+
+  if (decoded.byteLength !== expectedBytes) {
+    throw new Error(
+      `서버 환경변수 ${name}은(는) Base64로 인코딩한 ${expectedBytes}바이트 값이어야 합니다.`,
+    );
+  }
+
+  return decoded;
+}

@@ -38,7 +38,7 @@ bun run dev
 | `MANAGEMENT_DB_NAME` | 관리 DB 이름 |
 | `MANAGEMENT_DB_USER` | 관리 DB 사용자 |
 | `MANAGEMENT_DB_PASSWORD` | 관리 DB 비밀번호 |
-| `DB_CREDENTIAL_ENCRYPTION_KEY` | Step 4 대상 DB 자격증명 암복호화용 32자 이상 키 |
+| `DB_CREDENTIAL_ENCRYPTION_KEY` | 대상 DB 자격증명 암복호화용 Base64 인코딩 32바이트 키 |
 
 환경변수는 모듈 import 시 한꺼번에 검사하지 않고 로그인, 관리 DB, OpenAI, 암호화 기능이 실제 호출될 때 관련 그룹만 검사합니다. 따라서 비밀값이 없는 초기 빌드는 가능하지만, 필요한 런타임 값이 비어 있거나 잘못되면 값 자체를 노출하지 않는 명확한 오류로 실패합니다.
 
@@ -58,6 +58,14 @@ unset APP_PASSWORD
 로그인 세션은 `authenticated`, `issuedAt`, `expiresAt`만 포함한 HMAC-SHA-256 서명 토큰이며 `tena_query_session` HttpOnly 쿠키에 12시간 동안 저장됩니다. 쿠키는 `SameSite=Lax`, `Path=/`이고 운영 환경에서는 `Secure`가 적용됩니다. 메인 화면의 **로그아웃** 버튼은 서버 Route Handler를 통해 쿠키를 즉시 만료합니다.
 
 현재의 인증 모듈은 향후 사용자별 계정 및 권한 체계로 교체할 수 있도록 비밀번호 검증과 세션 처리를 분리했습니다. 로그인 API에는 프록시 신뢰 정책이 확정되지 않아 IP 기반 제한 대신 Argon2id 검증 비용과 실패당 500ms 지연을 적용했습니다. 다중 인스턴스 또는 외부 공개 전에 신뢰 가능한 프록시·공유 저장소 기반 rate limit을 추가해야 합니다.
+
+## 대상 DB 자격증명 암호화
+
+대상 DB 비밀번호는 관리 DB에 평문으로 저장하지 않고 AES-256-GCM으로 암호화합니다. `DB_CREDENTIAL_ENCRYPTION_KEY`에는 **정확히 32바이트인 키를 표준 Base64로 인코딩한 문자열**을 설정하며, 키는 암호문이 저장되는 관리 DB와 분리해 서버 환경파일에서만 관리합니다. 실제 키나 암호문을 문서와 로그에 기록하지 않습니다.
+
+저장 포맷은 `v1:{iv}:{authTag}:{ciphertext}`이며 각 바이너리 부분은 Base64url로 인코딩합니다. 매 암호화마다 12바이트 무작위 IV를 새로 만들고 16바이트 인증 태그로 변조와 잘못된 키를 탐지합니다.
+
+현재 저장소에는 관리 DB 구조 기준인 루트 `schema.md`가 제공되지 않았습니다. 따라서 `db_connection`의 실제 컬럼과 제약을 확인할 수 없어 repository, CRUD API, 대상 DB 풀 및 관리 UI는 의도적으로 구현하지 않았습니다. 문서가 제공되기 전에는 예상 컬럼을 SQL에 사용하거나 관리 DB 스키마를 추측하지 않습니다. 기존 데이터 및 암호문 포맷 호환성 역시 관리 DB 접속정보와 스키마 문서가 제공된 뒤 값 자체를 노출하지 않는 방식으로 확인해야 합니다.
 
 ## 관리 DB 연결 확인
 

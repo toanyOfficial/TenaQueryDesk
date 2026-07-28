@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   readPort,
+  requireBase64Bytes,
   requireMinimumLength,
   requireNonEmpty,
 } from "./env-validation";
@@ -39,5 +40,20 @@ describe("server environment validation", () => {
     expect(() => readPort({ PORT: "65536" }, "PORT", 3306)).toThrow(
       "1~65535",
     );
+  });
+
+  test("accepts only an exact-length Base64 encryption key", () => {
+    const encodedKey = Buffer.alloc(32, 7).toString("base64");
+
+    expect(requireBase64Bytes({ KEY: encodedKey }, "KEY", 32)).toHaveLength(32);
+    expect(() => requireBase64Bytes({ KEY: "not-base64" }, "KEY", 32))
+      .toThrow("Base64 형식");
+    expect(() =>
+      requireBase64Bytes(
+        { KEY: Buffer.alloc(16, 7).toString("base64") },
+        "KEY",
+        32,
+      ),
+    ).toThrow("32바이트");
   });
 });
