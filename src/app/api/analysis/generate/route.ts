@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   try {
     const conversationId=typeof requestedConversationId==="string"?requestedConversationId:crypto.randomUUID();
     const generated=await runAgent({userId:"authenticated-session",connectionId:target.id,conversationId,userMessage:prompt.trim(),connection:target});
-    const result={requestType:generated.sql?"select":"schema_explanation",answer:generated.answer,sql:generated.sql,referencedTables:[],assumptions:[],warnings:generated.warnings,riskLevel:"read_only",transactionGuidance:{applicable:false,summary:null},executionPlan:null,conversationId:generated.conversationId,agent:{iterations:generated.metadata.iterations,toolsUsed:generated.toolsUsed.map(tool=>tool.name),toolUsage:generated.toolsUsed,completedReason:generated.metadata.completedReason}};
+    const result={requestType:generated.sql?"select":"schema_explanation",answer:generated.answer,sql:generated.sql,referencedTables:generated.references.tables,assumptions:[],warnings:generated.warnings,riskLevel:"read_only",transactionGuidance:{applicable:false,summary:null},executionPlan:null,conversationId:generated.conversationId,references:generated.references,agent:{iterations:generated.metadata.iterations,toolsUsed:generated.toolsUsed.map(tool=>tool.name),toolUsage:generated.toolsUsed,completedReason:generated.metadata.completedReason}};
     return NextResponse.json({ok:true,analysisHistoryId:null,conversationId,historyWarning:"요청 내 도구 문맥은 유지되지만 요청 간 대화 저장소는 아직 구성되지 않았습니다.",result});
   } catch (error) {
     if(error instanceof OpenAiOperationError) return NextResponse.json({ok:false,analysisHistoryId:null,errorCode:error.code,error:error.message},{status:error.retryable?503:502});

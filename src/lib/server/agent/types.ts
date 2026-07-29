@@ -13,11 +13,11 @@ export type AgentModelClient = Readonly<{ complete(messages: ReadonlyArray<Agent
 export type OpenAiTool = Readonly<{ type: "function"; function: Readonly<{ name: string; description: string; parameters: JsonSchema; strict: true }> }>;
 
 export type ToolContext = Readonly<{ userId: string; conversationId: string; connectionId: number | null; connection: TargetConnection | null }>;
-export type AgentToolDefinition = Readonly<{ name: string; description: string; inputSchema: JsonSchema; requiresConnection: boolean; timeoutMs: number; maxResultCharacters: number; sensitiveKeys: ReadonlyArray<string>; execute(context: ToolContext, input: Readonly<Record<string, unknown>>): Promise<unknown> }>;
+export type AgentToolDefinition = Readonly<{ name: string; description: string; inputSchema: JsonSchema; requiresConnection: boolean; timeoutMs: number; timeoutErrorCode?:string; maxResultCharacters: number; sensitiveKeys: ReadonlyArray<string>; execute(context: ToolContext, input: Readonly<Record<string, unknown>>): Promise<unknown> }>;
 export type ToolResult =
   | Readonly<{ ok: true; tool: string; data: unknown; meta: Readonly<{ durationMs: number; truncated: boolean }> }>
-  | Readonly<{ ok: false; tool: string; error: Readonly<{ code: string; message: string; retryable: boolean }>; meta: Readonly<{ durationMs: number }> }>;
+  | Readonly<{ ok: false; tool: string; error: Readonly<{ code: string; message: string; retryable: boolean; details?: Readonly<Record<string,unknown>> }>; meta: Readonly<{ durationMs: number }> }>;
 export type AgentToolUsage = Readonly<{ name: string; ok: boolean; durationMs: number }>;
 
 export type RunAgentInput = Readonly<{ userId: string; connectionId: number | null; conversationId: string; userMessage: string; connection: TargetConnection | null; previousMessages?: ReadonlyArray<AgentMessage> }>;
-export type RunAgentResult = Readonly<{ answer: string; sql: string | null; warnings: ReadonlyArray<string>; toolsUsed: ReadonlyArray<AgentToolUsage>; conversationId: string; metadata: Readonly<{ iterations: number; completedReason: "final_answer" | "limit_reached" }> }>;
+export type RunAgentResult = Readonly<{ answer: string; sql: string | null; warnings: ReadonlyArray<string>; toolsUsed: ReadonlyArray<AgentToolUsage>; references:Readonly<{schemaVersion:string|null;tables:ReadonlyArray<string>;toolsUsed:ReadonlyArray<string>}>; conversationId: string; metadata: Readonly<{ iterations: number; completedReason: "final_answer" | "limit_reached" }> }>;
