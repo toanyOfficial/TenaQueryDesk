@@ -16,12 +16,17 @@ export type SchemaSelectionResult = Readonly<{
 }>;
 
 function tokens(value: string): string[] {
-  return [...new Set(value.toLocaleLowerCase().normalize("NFKC").split(/[^\p{L}\p{N}]+/u).filter((token) => token.length >= 2))];
+  const base=value.toLocaleLowerCase().normalize("NFKC").split(/[^\p{L}\p{N}]+/u).filter((token) => token.length >= 2);
+  const aliases:Record<string,ReadonlyArray<string>>={주문:["order","orders"],결제:["payment","payments","pay"],고객:["customer","customers","client","clients"],회원:["member","members","user","users"],상품:["product","products","item","items"],재고:["inventory","stock"],매장:["store","stores","shop"],배송:["delivery","shipping"],환불:["refund","refunds"],쿠폰:["coupon","coupons"]};
+  for(const [k,values] of Object.entries(aliases)) if(base.some(token=>token.includes(k))) base.push(...values);
+  return [...new Set(base)];
 }
 function scoreDocument(questionTokens: ReadonlyArray<string>, document: TableSchemaDocument): number {
   const tableText = `${document.table.name} ${document.table.comment}`.toLocaleLowerCase().normalize("NFKC");
   const columnText = document.table.columns.map((column) => `${column.name} ${column.comment}`).join(" ").toLocaleLowerCase().normalize("NFKC");
-  return questionTokens.reduce((score, token) => score + (tableText.includes(token) ? 5 : 0) + (columnText.includes(token) ? 2 : 0), 0);
+  const compact=(value:string)=>value.replace(/[^\p{L}\p{N}]+/gu,"");
+  const compactTable=compact(tableText), compactColumns=compact(columnText);
+  return questionTokens.reduce((score, token) => { const value=compact(token); return score + (compactTable.includes(value) ? 5 : 0) + (compactColumns.includes(value) ? 2 : 0); }, 0);
 }
 export function selectSchema(question: string, bundle: SchemaBundle): SchemaSelectionResult {
   const questionTokens = tokens(question);

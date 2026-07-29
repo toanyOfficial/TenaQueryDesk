@@ -1,7 +1,7 @@
 import type { GeneratedQueryResponse } from "@/lib/server/openai/types";
 import type { SchemaManifest } from "@/lib/server/schema/types";
 
-const USAGE_QUESTION = /(?:여기|너|서비스|화면).{0,20}(?:질문|대답|답변)|(?:target database|오른쪽 위).{0,30}(?:스키마|schema)|(?:어떤 문제|무슨 문제)/iu;
+const USAGE_QUESTION = /(?:여기|너|서비스|화면|대화창).{0,25}(?:질문|대답|답변|스키마)|(?:target database|오른쪽 위|연결된|현재).{0,30}(?:스키마|schema)|(?:스키마|schema).{0,20}(?:정보|알려|정상)|(?:어떤 문제|무슨 문제)/iu;
 
 /** Answers questions about the analysis screen itself without spending an
  * OpenAI request or pretending that those words identify a business table. */
