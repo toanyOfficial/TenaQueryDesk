@@ -10,7 +10,9 @@ afterEach(async () => { if (root) await rm(root, { recursive: true, force: true 
 describe("schema file writer", () => {
   test("blocks path traversal and encodes table names collision-free", () => {
     expect(() => assertSafeConnectionKey("../secret")).toThrow();
+    expect(() => assertSafeConnectionKey("dev..webpos.shop")).toThrow();
     expect(() => assertSafeConnectionKey("UPPER")).toThrow();
+    expect(() => assertSafeConnectionKey("dev.webpos.shop")).not.toThrow();
     expect(tableFileName("주문 상세")).toMatch(/^t-[0-9a-f]+\.json$/);
     expect(tableFileName("a/b")).not.toContain("/");
   });

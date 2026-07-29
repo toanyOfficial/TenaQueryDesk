@@ -11,7 +11,7 @@ export async function requestStructuredCompletion(system:string,user:string):Pro
  for(let attempt=0;attempt<=config.maxRetries;attempt++){
   const remaining=deadline-Date.now();if(remaining<=0)throw new OpenAiOperationError("timeout");const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),remaining);let response:Response|undefined;
   try{
-   response=await fetch(OPENAI_ENDPOINT,{method:"POST",signal:controller.signal,headers:{Authorization:`Bearer ${config.apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:config.model,messages:[{role:"system",content:system},{role:"user",content:user}],response_format:{type:"json_schema",json_schema:GENERATED_QUERY_JSON_SCHEMA},max_completion_tokens:config.maxOutputTokens,temperature:0})});
+   response=await fetch(OPENAI_ENDPOINT,{method:"POST",signal:controller.signal,headers:{Authorization:`Bearer ${config.apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:config.model,messages:[{role:"system",content:system},{role:"user",content:user}],response_format:{type:"json_schema",json_schema:GENERATED_QUERY_JSON_SCHEMA},max_completion_tokens:config.maxOutputTokens})});
    const payload=await response.json().catch(()=>null) as {choices?:Array<{finish_reason?:string;message?:{content?:string|null;refusal?:string|null}}>}|null;
    if(!response.ok)throw classifyOpenAiHttpError(response.status,payload);
    const choice=payload?.choices?.[0];if(choice?.message?.refusal||choice?.finish_reason==="content_filter")throw new OpenAiOperationError("safety_refusal");
