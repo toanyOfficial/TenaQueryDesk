@@ -1,0 +1,2 @@
+export type AgentLimits = Readonly<{ maxIterations: number; maxToolCalls: number; maxConsecutiveSameTool: number; requestTimeoutMs: number; toolTimeoutMs: number; maxToolResultCharacters: number; maxUserMessageCharacters: number; maxPreviousMessages: number }>;
+export const DEFAULT_AGENT_LIMITS: AgentLimits = Object.freeze({ maxIterations: 6, maxToolCalls: 10, maxConsecutiveSameTool: 3, requestTimeoutMs: 120_000, toolTimeoutMs: 5_000, maxToolResultCharacters: 40_000, maxUserMessageCharacters: 5_000, maxPreviousMessages: 8 });
