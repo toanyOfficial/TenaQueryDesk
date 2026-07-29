@@ -550,3 +550,8 @@ textarea {
 .openai-status { display: flex; align-items: center; gap: 16px; padding: 14px 16px; flex-wrap: wrap; }
 .openai-status strong { color: #176b5f; }
 .openai-status small { flex-basis: 100%; color: #667581; }
+.admin-db-form { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; }
+.admin-db-form label { display:grid; gap:6px; color:#53616d; font-size:12px; font-weight:700; }
+.admin-db-form input { padding:10px; border:1px solid #cfd9df; border-radius:5px; font:inherit; }
+.admin-form-wide { grid-column:1 / -1; }
+.admin-form-actions { display:flex; justify-content:flex-end; gap:8px; }
