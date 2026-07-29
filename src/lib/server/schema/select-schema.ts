@@ -1,7 +1,8 @@
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
-import type { DatabaseRelationshipDocument, SchemaBundle, SchemaManifest, TableSchemaDocument } from "./types";
+import type { DatabaseRelationshipDocument, SchemaBundle, SchemaCurrentPointer, SchemaManifest, TableSchemaDocument } from "./types";
 import { assertSafeSchemaRelativePath } from "./schema-current";
+import { assertSafeConnectionKey } from "./write-schema-files";
 
 export const MAX_SELECTED_TABLES = 12;
 export const MAX_SCHEMA_CHARACTERS = 100_000;
@@ -68,5 +69,27 @@ export async function loadSchemaBundle(connectionKey: string, relativeVersionPat
     if (document.formatVersion !== 1 || document.table.name !== entry.name) throw new Error("스키마 manifest와 테이블 파일이 일치하지 않습니다.");
     tables.push(document);
   }
+  return { manifest, relationships, tables };
+}
+
+/** Loads the published schema; flat files are accepted for compatibility with
+ * schema collections created before versioned current pointers were enabled. */
+export async function loadCurrentSchemaBundle(connectionKey: string, root = process.cwd()): Promise<SchemaBundle> {
+  assertSafeConnectionKey(connectionKey);
+  try {
+    const pointer = await readJson<SchemaCurrentPointer>(path.join(root, "schemas", connectionKey, "current.json"));
+    if (pointer.connectionKey !== connectionKey) throw new Error("최신 스키마 포인터가 연결과 일치하지 않습니다.");
+    return loadSchemaBundle(connectionKey, `schemas/${connectionKey}/${pointer.path}`, root);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  const directory = path.join(root, "schemas", connectionKey);
+  const manifest = await readJson<SchemaManifest>(path.join(directory, "manifest.json"));
+  const relationships = await readJson<DatabaseRelationshipDocument>(path.join(directory, "relationships.json"));
+  if (manifest.connectionKey !== connectionKey || manifest.tables.length > MAX_DISCOVERY_TABLES) throw new Error("지원하지 않는 스키마 파일입니다.");
+  const tables = await Promise.all(manifest.tables.map(async entry => {
+    if (!/^tables\/t-[0-9a-f]+\.json$/.test(entry.file)) throw new Error("허용되지 않은 테이블 스키마 경로입니다.");
+    return readJson<TableSchemaDocument>(path.join(directory, entry.file));
+  }));
   return { manifest, relationships, tables };
 }
