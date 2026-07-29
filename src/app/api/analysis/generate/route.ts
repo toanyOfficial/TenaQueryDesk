@@ -5,6 +5,7 @@ import { OpenAiOperationError } from "@/lib/server/openai/errors";
 import { getTargetConnection } from "@/lib/server/db/target-connections";
 import { loadCurrentSchemaBundle } from "@/lib/server/schema/select-schema";
 import { generateQueryFromSchema } from "@/lib/server/openai/generate-query";
+import { analysisUsageGuidance } from "@/lib/server/analysis/question-guidance";
 
 export async function POST(request: Request) {
   if (!(await getSession())) return NextResponse.json({ ok: false, error: "인증이 필요합니다." }, { status: 401 });
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
   if(!target || !target.active) return NextResponse.json({ok:false,analysisHistoryId:null,error:"활성 대상 DB 연결을 찾을 수 없습니다."},{status:404});
   try {
     const bundle=await loadCurrentSchemaBundle(target.connectionKey);
+    const guidance=analysisUsageGuidance(prompt.trim(),bundle.manifest);
+    if(guidance) return NextResponse.json({ok:true,analysisHistoryId:null,result:guidance});
     const generated=await generateQueryFromSchema(target.id,prompt.trim(),bundle);
     return NextResponse.json({ok:true,analysisHistoryId:null,historyWarning:"질문 이력 저장 기능은 아직 구성되지 않았습니다.",result:generated.result});
   } catch (error) {
