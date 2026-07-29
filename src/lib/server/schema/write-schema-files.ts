@@ -3,9 +3,14 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { SchemaBundle, SchemaGenerationResult } from "./types";
 
-const CONNECTION_KEY = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+// One stable database key and one schema-directory segment. Dots allow a
+// deployment/domain identifier, while traversal segments remain forbidden.
+const CONNECTION_KEY = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/;
+export function isSafeConnectionKey(value: string): boolean {
+  return CONNECTION_KEY.test(value) && !value.includes("..");
+}
 export function assertSafeConnectionKey(value: string): void {
-  if (!CONNECTION_KEY.test(value)) throw new Error("안전하지 않은 connection key입니다.");
+  if (!isSafeConnectionKey(value)) throw new Error("안전하지 않은 connection key입니다.");
 }
 
 export function schemaVersionDirectoryName(versionNo: number): string {
