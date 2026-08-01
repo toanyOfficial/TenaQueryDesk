@@ -20,6 +20,8 @@ export type AnalysisMessage = Readonly<{
   createdAt?: string;
   status?: "pending" | "success" | "failed";
   referencedTables?: ReadonlyArray<string>;
+  referencedDocuments?: ReadonlyArray<Readonly<{ id:string; title:string; version:number; updatedAt:string; status:string }>>;
+  toolsUsed?: ReadonlyArray<string>;
   assumptions?: ReadonlyArray<string>;
   warnings?: ReadonlyArray<string>;
   sqlApplied?: boolean;
@@ -98,5 +100,6 @@ export type ExecutionPlan = Readonly<{ preChecks: ReadonlyArray<string>; stateme
 export type GeneratedQueryResponse = Readonly<{
   requestType: "select" | "schema_explanation" | "ddl_dml_reference";
   answer: string; sql: string | null; referencedTables: ReadonlyArray<string>; assumptions: ReadonlyArray<string>; warnings: ReadonlyArray<string>;
+  references?: Readonly<{ schemaVersion:string|null; tables:ReadonlyArray<string>; documents:ReadonlyArray<Readonly<{id:string;title:string;version:number;updatedAt:string;status:string}>>; toolsUsed:ReadonlyArray<string> }>;
   riskLevel: SqlRiskLevel; transactionGuidance: Readonly<{ applicable: boolean; summary: string | null }>; executionPlan: ExecutionPlan | null;
 }>;

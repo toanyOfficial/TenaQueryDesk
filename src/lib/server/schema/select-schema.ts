@@ -94,7 +94,9 @@ export async function loadCurrentSchemaBundle(connectionKey: string, root = proc
   if (manifest.connectionKey !== connectionKey || manifest.tables.length > MAX_DISCOVERY_TABLES) throw new Error("지원하지 않는 스키마 파일입니다.");
   const tables = await Promise.all(manifest.tables.map(async entry => {
     if (!/^tables\/t-[0-9a-f]+\.json$/.test(entry.file)) throw new Error("허용되지 않은 테이블 스키마 경로입니다.");
-    return readJson<TableSchemaDocument>(path.join(directory, entry.file));
+    const document=await readJson<TableSchemaDocument>(path.join(directory, entry.file));
+    if(document.formatVersion!==1||document.table.name!==entry.name)throw new Error("스키마 manifest와 테이블 파일이 일치하지 않습니다.");
+    return document;
   }));
   return { manifest, relationships, tables };
 }
