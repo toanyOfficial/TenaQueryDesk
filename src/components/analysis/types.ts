@@ -48,27 +48,28 @@ export type QueryResult = Readonly<{
 export type QueryStatus = "idle" | "running" | "success" | "empty" | "error";
 
 export type AnalysisHistoryItem = Readonly<{
-  id: number;
+  id: string;
   connectionId: number;
+  title: string;
   requestType: string;
   userPromptPreview: string;
   assistantAnswerPreview: string | null;
   hasSql: boolean;
-  status: "success" | "failed";
+  status: "success" | "archived";
+  executed: boolean;
+  messageCount: number;
   createdAt: string;
 }>;
 
 export type AnalysisHistoryDetail = Readonly<{
-  id: number;
+  id: string;
   connectionId: number;
-  requestType: string;
-  userPrompt: string;
-  assistantAnswer: string | null;
-  generatedSql: string | null;
-  modelName: string | null;
-  status: "success" | "failed";
-  errorMessage: string | null;
+  title: string;
+  status: "active" | "archived";
   createdAt: string;
+  lastActivityAt: string;
+  messages: ReadonlyArray<Readonly<{id:string;role:"user"|"assistant";content:string;status:"success"|"failed";createdAt:string;metadata:Readonly<{sql?:string|null;references?:GeneratedQueryResponse["references"];warnings?:ReadonlyArray<string>;toolsUsed?:ReadonlyArray<string>}>|null}>>;
+  workingState: Readonly<{lastSql:string|null;executed:boolean;resultSummary:Record<string,unknown>|null}>|null;
 }>;
 
 export type QueryHistoryItem = Readonly<{
