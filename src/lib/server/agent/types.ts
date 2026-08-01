@@ -12,7 +12,7 @@ export type AgentModelTurn =
 export type AgentModelClient = Readonly<{ complete(messages: ReadonlyArray<AgentMessage>, tools: ReadonlyArray<OpenAiTool>, options?: Readonly<{ forceFinal?: boolean }>): Promise<AgentModelTurn> }>;
 export type OpenAiTool = Readonly<{ type: "function"; function: Readonly<{ name: string; description: string; parameters: JsonSchema; strict: true }> }>;
 
-export type ToolContext = Readonly<{ userId: string; conversationId: string; connectionId: number | null; connection: TargetConnection | null }>;
+export type ToolContext = Readonly<{ userId: string; conversationId: string; connectionId: number | null; connection: TargetConnection | null; executionApproved?: boolean }>;
 export type AgentToolDefinition = Readonly<{ name: string; description: string; inputSchema: JsonSchema; requiresConnection: boolean; timeoutMs: number; timeoutErrorCode?:string; maxResultCharacters: number; sensitiveKeys: ReadonlyArray<string>; execute(context: ToolContext, input: Readonly<Record<string, unknown>>): Promise<unknown> }>;
 export type ToolResult =
   | Readonly<{ ok: true; tool: string; data: unknown; meta: Readonly<{ durationMs: number; truncated: boolean }> }>
