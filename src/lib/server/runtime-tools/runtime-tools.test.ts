@@ -1,0 +1,14 @@
+import { describe,expect,test } from "bun:test";
+import { createInitialToolRegistry } from "@/lib/server/agent/initial-tools";
+import { analyzePortEvidence,summarizeProcessEvidence } from "./runtime-status-analysis";
+import { sanitizeRuntimeText } from "./runtime-result-sanitizer";
+import { RUNTIME_LIMITS,RuntimeToolError } from "./runtime-tool-types";
+
+describe("runtime status read-only policy",()=>{
+  test("registers only the nine predefined runtime status tools",()=>{const registry=createInitialToolRegistry();const names=["get_runtime_project_context","get_deployment_status","get_process_status","get_port_status","run_project_health_check","get_reverse_proxy_status","get_deployment_report","compare_deployed_commit_with_repository","get_runtime_capabilities"];for(const name of names)expect(registry.get(name)).not.toBeNull();for(const forbidden of ["run_shell_command","execute_command","scan_port","read_file","restart_process"])expect(registry.get(forbidden)).toBeNull();});
+  test("does not accept a command, arbitrary port, URL or report path",()=>{const registry=createInitialToolRegistry();expect(JSON.stringify(registry.get("get_process_status")?.inputSchema)).not.toContain("command");expect(JSON.stringify(registry.get("get_port_status")?.inputSchema)).not.toContain('"port"');expect(JSON.stringify(registry.get("run_project_health_check")?.inputSchema)).not.toContain('"url"');expect(JSON.stringify(registry.get("get_deployment_report")?.inputSchema)).not.toContain('"path"');});
+  test("distinguishes missing, duplicate and zombie processes",()=>{expect(summarizeProcessEvidence([])).toMatchObject({running:false,duplicate:false,zombie:false});expect(summarizeProcessEvidence([{pid:1,state:"S",zombie:false,runtimeMatches:true},{pid:2,state:"Z",zombie:true,runtimeMatches:true}])).toMatchObject({running:true,processCount:2,duplicate:true,zombie:true,runtimeMatches:true});});
+  test("compares listener owners with project processes",()=>{expect(analyzePortEvidence(1,[20],[20])).toMatchObject({listening:true,projectProcessMatches:true});expect(analyzePortEvidence(1,[30],[20])).toMatchObject({listening:true,projectProcessMatches:false});expect(analyzePortEvidence(0,[],[20]).warnings[0]).toContain("리스닝");});
+  test("redacts report secrets and connection strings",()=>{const result=sanitizeRuntimeText("password=hunter2 token=github_pat_abcdefghijklmnopqrstuvwxyz123 mysql://root:secret@db/prod");expect(result.text).not.toContain("hunter2");expect(result.text).not.toContain("github_pat_");expect(result.text).not.toContain("root:secret");});
+  test("exposes bounded real-time limits and standard safe errors",()=>{expect(RUNTIME_LIMITS.healthTimeoutMs).toBe(5_000);expect(RUNTIME_LIMITS.reportLines).toBe(200);expect(new RuntimeToolError("RUNTIME_PORT_NOT_LISTENING","not listening").code).toBe("RUNTIME_PORT_NOT_LISTENING");});
+});

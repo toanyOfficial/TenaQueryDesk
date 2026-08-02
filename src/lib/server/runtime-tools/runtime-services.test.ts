@@ -1,0 +1,18 @@
+import { afterEach,describe,expect,mock,test } from "bun:test";
+import { createServer, type Server } from "node:http";
+import { mkdtemp,symlink,writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { RuntimeProject } from "./runtime-tool-types";
+
+mock.module("server-only",()=>({}));
+let server:Server|null=null;
+afterEach(async()=>{if(server)await new Promise<void>(resolve=>server!.close(()=>resolve()));server=null;});
+const fixture=(overrides:Partial<RuntimeProject>={}):RuntimeProject=>({id:"app",key:"query-desk",displayName:"Query Desk",role:"application",serverId:"local-1",serverMode:"local",runtimeType:"other",branch:"main",expectedPort:null,startMode:"direct",runUser:null,deploymentPath:process.cwd(),pathAlias:"query-desk",repositoryRole:"application",repositoryId:"repo-1",connectionIds:[1],healthPath:null,externalHealthUrl:null,reverseProxyDomain:null,reportRoot:null,deploymentStateFile:null,active:true,...overrides});
+
+describe("runtime project services",()=>{
+ test("parses explicit project bindings and blocks another connection",async()=>{const {getRuntimeProjects,requireRuntimeProject}=await import("./runtime-project-service");const projects=getRuntimeProjects({...process.env,RUNTIME_PROJECTS_JSON:JSON.stringify([{...fixture(),deploymentPath:process.cwd()}])});expect(requireRuntimeProject("app",1,projects).pathAlias).toBe("query-desk");expect(()=>requireRuntimeProject("app",2,projects)).toThrow("연결된 운영 프로젝트가 아닙니다");expect(JSON.stringify(requireRuntimeProject("app",1,projects))).not.toContain("password");});
+ test("finds only processes rooted in the registered project path",async()=>{const {getProcessStatus}=await import("./process-status-service");const status=await getProcessStatus(fixture());expect(status.running).toBe(true);expect(status.processes.some(item=>item.pid===process.pid)).toBe(true);expect(status.processes.every(item=>!item.commandSummary.includes(process.cwd()))).toBe(true);});
+ test("checks only the configured expected port and internal URL",async()=>{server=createServer((_request,response)=>{response.writeHead(200,{"content-type":"application/json"});response.end('{"ok":true,"token":"github_pat_abcdefghijklmnopqrstuvwxyz123456"}');});await new Promise<void>(resolve=>server!.listen(0,"127.0.0.1",resolve));const address=server.address();if(!address||typeof address==="string")throw new Error("missing address");const project=fixture({expectedPort:address.port,healthPath:"/health"});const [{getPortStatus},{runProjectHealthCheck}]=await Promise.all([import("./port-status-service"),import("./health-check-service")]);const port=await getPortStatus(project),health=await runProjectHealthCheck(project,"internal");expect(port.listening).toBe(true);expect(port.projectProcessMatches).toBe(true);expect(health).toMatchObject({healthy:true,httpStatus:200});expect(health.responseSummary).not.toContain("github_pat_");});
+ test("reads only a project-owned report and masks failures",async()=>{const root=await mkdtemp(join(tmpdir(),"runtime-report-"));await writeFile(join(root,"deploy-1.json"),JSON.stringify({projectId:"app",deploymentId:"deploy-1",status:"failed",failure:"password=hunter2\nline2"}));const {getDeploymentReport}=await import("./deployment-report-service");const report=await getDeploymentReport(fixture({reportRoot:root}),"deploy-1","failure",1);expect(report.content).not.toContain("hunter2");expect(report.truncated).toBe(true);await symlink(join(root,"deploy-1.json"),join(root,"deploy-link.json"));await expect(getDeploymentReport(fixture({reportRoot:root}),"deploy-link","failure",10)).rejects.toMatchObject({code:"DEPLOYMENT_REPORT_ACCESS_DENIED"});});
+});
