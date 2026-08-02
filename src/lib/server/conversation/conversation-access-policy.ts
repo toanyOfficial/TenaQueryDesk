@@ -1,0 +1,2 @@
+import { ConversationError, type Conversation } from "./conversation-types";
+export function assertConversationAccess(conversation:Conversation,userId:string,connectionId?:number){if(conversation.userId!==userId)throw new ConversationError("CONVERSATION_ACCESS_DENIED","대화에 접근할 수 없습니다.");if(conversation.status!=="active")throw new ConversationError("CONVERSATION_CLOSED","종료된 대화입니다.");if(connectionId!==undefined&&conversation.connectionId!==connectionId)throw new ConversationError("CONVERSATION_CONNECTION_MISMATCH","대상 DB가 다른 대화입니다. 새 대화를 시작해 주세요.");return conversation;}
