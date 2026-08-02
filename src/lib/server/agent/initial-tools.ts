@@ -4,12 +4,19 @@ import type { AgentToolDefinition } from "./types";
 import { schemaAgentTools } from "./schema-tools";
 import { loadSchemaContext } from "@/lib/server/schema-tools/context-service";
 import { knowledgeAgentTools } from "./knowledge-tools";
+import { sqlAgentTools } from "./sql-tools";
+import { businessKnowledgeAgentTools } from "./business-knowledge-tools";
+import { githubAgentTools } from "./github-tools";
+import { runtimeAgentTools } from "./runtime-tools";
+import { uiAgentTools } from "./ui-tools";
+import {disabledCapabilities,getFeatureFlags,isToolFeatureEnabled} from "@/lib/server/features/feature-flags";
 
 const emptyObjectSchema={type:"object",additionalProperties:false,properties:{},required:[]} as const;
-const capabilities:AgentToolDefinition={name:"get_service_capabilities",description:"현재 Agent에 실제 등록되어 사용할 수 있는 기능과 아직 연결되지 않은 기능을 확인한다.",inputSchema:emptyObjectSchema,requiresConnection:false,timeoutMs:DEFAULT_AGENT_LIMITS.toolTimeoutMs,maxResultCharacters:DEFAULT_AGENT_LIMITS.maxToolResultCharacters,sensitiveKeys:["password","encryptedPassword","apiKey","token"],async execute(){return {agentToolCalling:true,schemaSearch:true,knowledgeSearch:true,readonlySqlValidation:false,readonlySqlExecution:false,availableTools:["get_service_capabilities","get_selected_database_context",...schemaAgentTools.map(tool=>tool.name),...knowledgeAgentTools.map(tool=>tool.name)],conversationPersistence:false};}};
+const capabilities:AgentToolDefinition={name:"get_service_capabilities",description:"현재 Agent에 실제 등록되어 사용할 수 있는 기능과 아직 연결되지 않은 기능을 확인한다.",inputSchema:emptyObjectSchema,requiresConnection:false,timeoutMs:DEFAULT_AGENT_LIMITS.toolTimeoutMs,maxResultCharacters:DEFAULT_AGENT_LIMITS.maxToolResultCharacters,sensitiveKeys:["password","encryptedPassword","apiKey","token"],async execute(){const flags=getFeatureFlags(),tools=allTools().filter(tool=>isToolFeatureEnabled(tool.name,flags));return {agentToolCalling:true,schemaSearch:true,knowledgeSearch:true,businessKnowledge:true,githubSourceExploration:flags.githubSearch,runtimeStatusExploration:flags.runtimeInspection,uiInspection:flags.uiBrowser?"runtime_configuration_required":false,readonlySqlValidation:true,readonlySqlExecution:flags.sqlExecution?"user_approval_required":false,availableTools:["get_service_capabilities","get_selected_database_context",...tools.map(tool=>tool.name)],disabledCapabilities:disabledCapabilities(flags),conversationPersistence:true};}};
 const selectedDatabase:AgentToolDefinition={name:"get_selected_database_context",description:"현재 선택된 대상 DB의 안전한 기본 정보와 최신 스키마 생성 상태를 확인한다. 자격증명과 host는 반환하지 않는다.",inputSchema:emptyObjectSchema,requiresConnection:true,timeoutMs:DEFAULT_AGENT_LIMITS.toolTimeoutMs,maxResultCharacters:DEFAULT_AGENT_LIMITS.maxToolResultCharacters,sensitiveKeys:["host","username","password","encryptedPassword"],async execute(context){
   const connection=context.connection!;
   try { const loaded=await loadSchemaContext(connection);return {connectionId:connection.id,displayName:connection.displayName,connectionKey:connection.connectionKey,dbType:"mysql",databaseName:connection.databaseName,connectionStatus:connection.connectionStatus,schema:{status:"success",version:loaded.version,generatedAt:loaded.generatedAt,tableCount:loaded.bundle.manifest.tableCount,viewCount:loaded.bundle.manifest.viewCount}}; }
   catch { return {connectionId:connection.id,displayName:connection.displayName,connectionKey:connection.connectionKey,dbType:"mysql",databaseName:connection.databaseName,connectionStatus:connection.connectionStatus,schema:{status:"missing",version:null,generatedAt:null,tableCount:null,viewCount:null}}; }
 }};
-export function createInitialToolRegistry():ToolRegistry { return new ToolRegistry([capabilities,selectedDatabase,...schemaAgentTools,...knowledgeAgentTools]); }
+const allTools=()=>[...schemaAgentTools,...knowledgeAgentTools,...businessKnowledgeAgentTools,...githubAgentTools,...runtimeAgentTools,...uiAgentTools,...sqlAgentTools];
+export function createInitialToolRegistry():ToolRegistry { const flags=getFeatureFlags();return new ToolRegistry([capabilities,selectedDatabase,...allTools().filter(tool=>isToolFeatureEnabled(tool.name,flags))]); }

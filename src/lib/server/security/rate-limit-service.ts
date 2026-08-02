@@ -1,0 +1,4 @@
+import {SecurityError} from "./security-errors";
+type Bucket={count:number;resetAt:number};const buckets=new Map<string,Bucket>();
+export function consumeSecurityRateLimit(input:{userId:string;organizationId:string;toolName:string;resourceId:string|null;riskLevel:"low"|"medium"|"high"},now=Date.now()){const limit=input.riskLevel==="high"?10:input.riskLevel==="medium"?30:60,windowMs=60_000,keys=[`u:${input.userId}:${input.toolName}`,`o:${input.organizationId}:${input.toolName}`,`r:${input.resourceId??"none"}:${input.toolName}`];for(const key of keys){const current=buckets.get(key);if(!current||current.resetAt<=now)buckets.set(key,{count:1,resetAt:now+windowMs});else{current.count++;if(current.count>limit)throw new SecurityError("RATE_LIMIT_EXCEEDED");}}return{limit,remaining:Math.max(0,limit-(buckets.get(keys[0])?.count??0)),resetAt:new Date(buckets.get(keys[0])!.resetAt).toISOString()};}
+export function resetSecurityRateLimits(){buckets.clear();}

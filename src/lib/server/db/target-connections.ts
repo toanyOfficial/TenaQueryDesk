@@ -21,4 +21,10 @@ export async function listTargetConnections(includeInactive=false){ await ensure
 export async function getTargetConnection(id:number){ await ensureTable(); const [rows]=await getManagementDbPool().execute<RowDataPacket[]>("SELECT * FROM tq_db_connection WHERE id=? LIMIT 1",[id]); return rows[0]?map(rows[0]):null; }
 export async function createTargetConnection(input:{connectionKey:string;displayName:string;host:string;port:number;databaseName:string;username:string;password:string}){ await ensureTable(); const [result]=await getManagementDbPool().execute("INSERT INTO tq_db_connection (connection_key,display_name,host,port,database_name,username,encrypted_password) VALUES (?,?,?,?,?,?,?)",[input.connectionKey,input.displayName,input.host,input.port,input.databaseName,input.username,encryptTargetDbPassword(input.password)]); return Number((result as {insertId:number}).insertId); }
 export function createTargetPool(c:TargetConnection):Pool { return mysql.createPool({host:c.host,port:c.port,database:c.databaseName,user:c.username,password:decryptTargetDbPassword(c.encryptedPassword),connectionLimit:2,multipleStatements:false,connectTimeout:10000}); }
+const targetPools = new Map<number, Pool>();
+/** Reuses one bounded pool per registered connection. Credentials never leave this module. */
+export function getTargetPool(c:TargetConnection):Pool {
+  const existing=targetPools.get(c.id); if(existing)return existing;
+  const pool=createTargetPool(c); targetPools.set(c.id,pool); return pool;
+}
 export async function testTargetConnection(id:number){ const c=await getTargetConnection(id); if(!c) throw new Error("NOT_FOUND"); const pool=createTargetPool(c); let ok=false; try { await pool.query("SELECT 1"); ok=true; } finally { await pool.end(); await getManagementDbPool().execute("UPDATE tq_db_connection SET connection_status=?, checked_at=CURRENT_TIMESTAMP(3) WHERE id=?",[ok?"healthy":"failed",id]); } }

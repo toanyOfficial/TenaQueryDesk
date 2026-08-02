@@ -10,7 +10,15 @@
     "lint": "next lint",
     "typecheck": "bun run build:meta && tsc --noEmit",
     "verify:files": "bun scripts/verify-required-files.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "test:unit": "bun test src/lib/server",
+    "test:regression": "bun test tests/regression",
+    "test:contract": "bun test tests/contracts",
+    "test:integration": "bun test tests/integration",
+    "quality": "bun scripts/run-quality-gate.ts",
+    "smoke": "bun scripts/smoke-test.ts",
+    "test:model": "bun scripts/actual-model-eval.ts",
+    "test:e2e": "bun scripts/staging-e2e.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

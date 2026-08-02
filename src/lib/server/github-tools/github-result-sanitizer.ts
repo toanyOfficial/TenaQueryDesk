@@ -1,0 +1,2 @@
+const SECRET_PATTERNS=[/(gh[pousr]_[A-Za-z0-9_]{20,})/g,/(github_pat_[A-Za-z0-9_]{20,})/g,/((?:api[_-]?key|token|password|secret)\s*[:=]\s*["'])[^"]{8,}(["'])/gi,/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g];
+export function sanitizeSource(content:string){let safe=content;for(const pattern of SECRET_PATTERNS)safe=safe.replace(pattern,(_match,prefix,suffix)=>prefix&&suffix?`${prefix}[REDACTED]${suffix}`:"[REDACTED SECRET]");return safe;}

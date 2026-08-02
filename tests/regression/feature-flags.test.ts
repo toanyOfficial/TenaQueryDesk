@@ -1,0 +1,3 @@
+import {describe,expect,test} from "bun:test";
+import {getFeatureFlags,isToolFeatureEnabled} from "@/lib/server/features/feature-flags";
+describe("server feature flags",()=>{test("removes disabled high-risk tools at the registry boundary",()=>{const flags=getFeatureFlags({...process.env,FEATURE_SQL_EXECUTION:"false",FEATURE_GITHUB_SEARCH:"false",FEATURE_RUNTIME_INSPECTION:"true"});expect(isToolFeatureEnabled("execute_readonly_sql",flags)).toBe(false);expect(isToolFeatureEnabled("search_repository_code",flags)).toBe(false);expect(isToolFeatureEnabled("get_process_status",flags)).toBe(true);expect(isToolFeatureEnabled("validate_readonly_sql",flags)).toBe(true);});});

@@ -1,0 +1,27 @@
+name: deployment-verification
+on:
+  workflow_dispatch:
+    inputs:
+      base_url: { description: "Registered staging or production base URL", required: true, type: string }
+      expected_commit: { description: "Expected deployed full commit", required: true, type: string }
+      environment: { description: "Verification environment", required: true, type: choice, options: [staging, production] }
+permissions:
+  contents: read
+jobs:
+  smoke:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.2.14 }
+      - run: bun scripts/smoke-test.ts | tee smoke-result.json
+        env:
+          SMOKE_BASE_URL: ${{ inputs.base_url }}
+          SMOKE_EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ inputs.environment }}-${{ github.sha }}
+          path: smoke-result.json
+          retention-days: 14

@@ -1,0 +1,45 @@
+name: quality-gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  required:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-root
+          MYSQL_DATABASE: tq_test_orders
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-root"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      TEST_ENVIRONMENT: integration
+      TEST_TARGET_DB_HOST: 127.0.0.1
+      TEST_TARGET_DB_PORT: 3306
+      TEST_TARGET_DB_USER: root
+      TEST_TARGET_DB_PASSWORD: fixture-root
+      TEST_TARGET_DB_NAME: tq_test_orders
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.2.14 }
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/run-quality-gate.ts
+      - name: Upload redacted quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report-${{ github.sha }}
+          path: .quality/latest.json
+          retention-days: 14
+          if-no-files-found: warn
