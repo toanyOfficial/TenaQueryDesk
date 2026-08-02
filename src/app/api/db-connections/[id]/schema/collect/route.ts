@@ -3,9 +3,12 @@ import { getSession } from "@/lib/server/auth/session";
 import { getTargetConnection } from "@/lib/server/db/target-connections";
 import { collectMysqlSchema } from "@/lib/server/schema/collect-mysql-schema";
 import { listBusinessKnowledge, validateStoredKnowledge } from "@/lib/server/business-knowledge/business-knowledge-service";
+import {assertSameOrigin,getAuthenticatedSecurityActor,securityErrorResponse} from "@/lib/server/security/request-security";
+import {authorizeApiAction} from "@/lib/server/security/authorization-service";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await getSession())) return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+  try{assertSameOrigin(request);const actor=await getAuthenticatedSecurityActor(),resourceId=String((await params).id);await authorizeApiAction({actor,resourceType:"schema",resourceId,action:"create"});}catch(error){return securityErrorResponse(error,NextResponse);}
   const id = Number((await params).id), connection = await getTargetConnection(id);
   if (!connection) return NextResponse.json({ error: "연결을 찾을 수 없습니다." }, { status: 404 });
   let result;

@@ -1,0 +1,11 @@
+export type SecurityRole="user"|"analyst"|"operator"|"admin"|"security_admin";
+export type SecurityEnvironment="local"|"development"|"staging"|"production";
+export type DataClassification="public"|"internal"|"confidential"|"personal"|"restricted"|"secret";
+export type SecurityResourceType="service"|"conversation"|"db_connection"|"schema"|"sql"|"knowledge_document"|"business_knowledge"|"github_repository"|"runtime_project"|"deployment_report"|"ui_project"|"screenshot"|"audit_log"|"security_policy";
+export type SecurityAction="list"|"read"|"search"|"execute"|"create"|"update"|"activate"|"archive"|"delete"|"export"|"inspect_sensitive"|"manage_permission";
+export type SecurityActor=Readonly<{userId:string;organizationId:string;roles:ReadonlyArray<SecurityRole>;active:boolean;authenticatedAt:number|null}>;
+export type AuthorizationRequest=Readonly<{actor:SecurityActor;action:SecurityAction;resource:Readonly<{type:SecurityResourceType;id:string|null;environment:SecurityEnvironment|null;ownerId:string|null;organizationId:string|null;classification:DataClassification}>;context:Readonly<{conversationId:string|null;connectionId:number|null;agentRunId:string|null;toolName:string|null}>}>;
+export type AuthorizationDecision=Readonly<{allowed:boolean;reasonCode:string;appliedPolicies:ReadonlyArray<string>;obligations:Readonly<{maskFields:ReadonlyArray<string>;maxRows:number;maxResultChars:number;requireAudit:boolean;requireFreshAuthentication:boolean;allowSensitive:boolean}>}>;
+export type ResourceGrant=Readonly<{subjectType:"user"|"role";subjectId:string;resourceType:SecurityResourceType;resourceId:string;action:SecurityAction;environment:SecurityEnvironment|null;deny:boolean;validFrom:Date|null;validUntil:Date|null}>;
+export type ToolSecurityMetadata=Readonly<{resourceType:SecurityResourceType;action:SecurityAction;riskLevel:"low"|"medium"|"high";auditLevel:"basic"|"detailed";environment?:SecurityEnvironment|null;resourceIdInput?:string;classification?:DataClassification;requiresFreshAuthorization?:boolean;maxRows?:number}>;
+export type SecuritySeverity="info"|"warning"|"high"|"critical";

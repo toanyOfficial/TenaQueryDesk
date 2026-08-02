@@ -4,7 +4,7 @@ import type { AgentModelClient, AgentModelTurn } from "./types";
 import { ToolRegistry } from "./tool-registry";
 import type { AgentToolDefinition } from "./types";
 import { SchemaToolError } from "@/lib/server/schema-tools/types";
-const input={userId:"u",connectionId:null,conversationId:"conversation",userMessage:"안녕하세요",connection:null};
+const input={userId:"u",connectionId:null,conversationId:"conversation",userMessage:"안녕하세요",connection:null,securityActor:{userId:"u",organizationId:"test",roles:["security_admin"] as const,active:true,authenticatedAt:Math.floor(Date.now()/1000)}};
 function client(turns:AgentModelTurn[],observed?:unknown[][]):AgentModelClient{return {async complete(messages,tools){observed?.push([messages,tools]);const turn=turns.shift();if(!turn)throw new Error("unexpected model call");return turn;}}}
 const schemaRegistry=(empty=false)=>new ToolRegistry((["search_schema","describe_table","find_table_relationships","get_schema_summary"] as const).map((name):AgentToolDefinition=>({name,description:name,inputSchema:{type:"object",additionalProperties:true,properties:{},required:[]},requiresConnection:false,timeoutMs:100,maxResultCharacters:1000,sensitiveKeys:[],async execute(_context,args){if(name==="search_schema")return {schemaVersion:"v000003",matches:empty?[]:[{tableName:"orders"}]};if(name==="describe_table"){if(args.tableName==="missing")throw new SchemaToolError("TABLE_NOT_FOUND","없음",true,{candidates:["orders"]});return {schemaVersion:"v000003",table:{name:String(args.tableName),columns:[{name:"id"}]}};}if(name==="find_table_relationships")return {schemaVersion:"v000003",baseTable:"orders",relationships:[{relatedTable:"items"}]};return {schemaVersion:"v000003",tableCount:2};}})));
 describe("runAgent",()=>{
