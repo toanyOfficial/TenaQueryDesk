@@ -3,6 +3,7 @@ import type { AgentToolCall, ToolContext, ToolResult } from "./types";
 import { ToolRegistry } from "./tool-registry";
 import { SchemaToolError } from "@/lib/server/schema-tools/types";
 import { KnowledgeError } from "@/lib/server/knowledge/types";
+import { GitHubToolError } from "@/lib/server/github-tools/github-tool-types";
 
 function validObject(input: unknown, schema: Readonly<Record<string, unknown>>): input is Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input)) return false;
@@ -27,5 +28,5 @@ export async function executeToolCall(registry: ToolRegistry, call: AgentToolCal
     const data=serialized.length>limit ? { truncatedJson:serialized.slice(0,limit) } : safe;
     const output:ToolResult={ok:true,tool:call.name,data,meta:{durationMs:Date.now()-started,truncated:serialized.length>limit}};
     auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:true,durationMs:output.meta.durationMs}); return output;
-  } catch(error) { const safe=error instanceof SchemaToolError||error instanceof KnowledgeError;const output:ToolResult=safe?{ok:false,tool:call.name,error:{code:error.code,message:error.message,retryable:error.retryable,...(error.details?{details:error.details}:{})},meta:{durationMs:Date.now()-started}}:failure(call.name,started,"TOOL_EXECUTION_FAILED","도구 실행 중 오류가 발생했습니다."); auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:false,durationMs:output.meta.durationMs}); return output; }
+  } catch(error) { const safe=error instanceof SchemaToolError||error instanceof KnowledgeError||error instanceof GitHubToolError;const output:ToolResult=safe?{ok:false,tool:call.name,error:{code:error.code,message:error.message,retryable:error.retryable,...(error.details?{details:error.details}:{})},meta:{durationMs:Date.now()-started}}:failure(call.name,started,"TOOL_EXECUTION_FAILED","도구 실행 중 오류가 발생했습니다."); auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:false,durationMs:output.meta.durationMs}); return output; }
 }

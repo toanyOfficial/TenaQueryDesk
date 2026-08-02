@@ -22,6 +22,7 @@ export type AnalysisMessage = Readonly<{
   referencedTables?: ReadonlyArray<string>;
   referencedDocuments?: ReadonlyArray<Readonly<{ id:string; title:string; version:number; updatedAt:string; status:string }>>;
   businessKnowledge?: ReadonlyArray<Readonly<{id:string;title:string;version:number;type:string;appliedRules:ReadonlyArray<string>}>>;
+  github?: NonNullable<GeneratedQueryResponse["references"]>["github"];
   toolsUsed?: ReadonlyArray<string>;
   assumptions?: ReadonlyArray<string>;
   warnings?: ReadonlyArray<string>;
@@ -102,6 +103,6 @@ export type ExecutionPlan = Readonly<{ preChecks: ReadonlyArray<string>; stateme
 export type GeneratedQueryResponse = Readonly<{
   requestType: "select" | "schema_explanation" | "ddl_dml_reference";
   answer: string; sql: string | null; referencedTables: ReadonlyArray<string>; assumptions: ReadonlyArray<string>; warnings: ReadonlyArray<string>;
-  references?: Readonly<{ schemaVersion:string|null; tables:ReadonlyArray<string>; documents:ReadonlyArray<Readonly<{id:string;title:string;version:number;updatedAt:string;status:string}>>; businessKnowledge:ReadonlyArray<Readonly<{id:string;title:string;version:number;type:string;appliedRules:ReadonlyArray<string>}>>; toolsUsed:ReadonlyArray<string> }>;
+  references?: Readonly<{ schemaVersion:string|null; tables:ReadonlyArray<string>; documents:ReadonlyArray<Readonly<{id:string;title:string;version:number;updatedAt:string;status:string}>>; businessKnowledge:ReadonlyArray<Readonly<{id:string;title:string;version:number;type:string;appliedRules:ReadonlyArray<string>}>>; github:Readonly<{repository:Readonly<{id:string;owner:string;name:string;role:string;ref:string;commit:string;deployedCommit:string|null;deploymentVerified:boolean}>|null;files:ReadonlyArray<Readonly<{path:string;startLine:number;endLine:number;ref:string;commit:string;cached:boolean}>>}>; toolsUsed:ReadonlyArray<string> }>;
   riskLevel: SqlRiskLevel; transactionGuidance: Readonly<{ applicable: boolean; summary: string | null }>; executionPlan: ExecutionPlan | null;
 }>;
