@@ -21,6 +21,9 @@ export type AnalysisMessage = Readonly<{
   status?: "pending" | "success" | "failed";
   referencedTables?: ReadonlyArray<string>;
   referencedDocuments?: ReadonlyArray<Readonly<{ id:string; title:string; version:number; updatedAt:string; status:string }>>;
+  businessKnowledge?: ReadonlyArray<Readonly<{id:string;title:string;version:number;type:string;appliedRules:ReadonlyArray<string>}>>;
+  github?: NonNullable<GeneratedQueryResponse["references"]>["github"];
+  runtime?: NonNullable<GeneratedQueryResponse["references"]>["runtime"];
   toolsUsed?: ReadonlyArray<string>;
   assumptions?: ReadonlyArray<string>;
   warnings?: ReadonlyArray<string>;
@@ -48,27 +51,28 @@ export type QueryResult = Readonly<{
 export type QueryStatus = "idle" | "running" | "success" | "empty" | "error";
 
 export type AnalysisHistoryItem = Readonly<{
-  id: number;
+  id: string;
   connectionId: number;
+  title: string;
   requestType: string;
   userPromptPreview: string;
   assistantAnswerPreview: string | null;
   hasSql: boolean;
-  status: "success" | "failed";
+  status: "success" | "archived";
+  executed: boolean;
+  messageCount: number;
   createdAt: string;
 }>;
 
 export type AnalysisHistoryDetail = Readonly<{
-  id: number;
+  id: string;
   connectionId: number;
-  requestType: string;
-  userPrompt: string;
-  assistantAnswer: string | null;
-  generatedSql: string | null;
-  modelName: string | null;
-  status: "success" | "failed";
-  errorMessage: string | null;
+  title: string;
+  status: "active" | "archived";
   createdAt: string;
+  lastActivityAt: string;
+  messages: ReadonlyArray<Readonly<{id:string;role:"user"|"assistant";content:string;status:"success"|"failed";createdAt:string;metadata:Readonly<{sql?:string|null;references?:GeneratedQueryResponse["references"];warnings?:ReadonlyArray<string>;toolsUsed?:ReadonlyArray<string>}>|null}>>;
+  workingState: Readonly<{lastSql:string|null;executed:boolean;resultSummary:Record<string,unknown>|null}>|null;
 }>;
 
 export type QueryHistoryItem = Readonly<{
@@ -100,6 +104,6 @@ export type ExecutionPlan = Readonly<{ preChecks: ReadonlyArray<string>; stateme
 export type GeneratedQueryResponse = Readonly<{
   requestType: "select" | "schema_explanation" | "ddl_dml_reference";
   answer: string; sql: string | null; referencedTables: ReadonlyArray<string>; assumptions: ReadonlyArray<string>; warnings: ReadonlyArray<string>;
-  references?: Readonly<{ schemaVersion:string|null; tables:ReadonlyArray<string>; documents:ReadonlyArray<Readonly<{id:string;title:string;version:number;updatedAt:string;status:string}>>; toolsUsed:ReadonlyArray<string> }>;
+  references?: Readonly<{ schemaVersion:string|null; tables:ReadonlyArray<string>; documents:ReadonlyArray<Readonly<{id:string;title:string;version:number;updatedAt:string;status:string}>>; businessKnowledge:ReadonlyArray<Readonly<{id:string;title:string;version:number;type:string;appliedRules:ReadonlyArray<string>}>>; github:Readonly<{repository:Readonly<{id:string;owner:string;name:string;role:string;ref:string;commit:string;deployedCommit:string|null;deploymentVerified:boolean}>|null;files:ReadonlyArray<Readonly<{path:string;startLine:number;endLine:number;ref:string;commit:string;cached:boolean}>>}>; runtime:Readonly<{projectId:string;projectKey:string;serverId:string;runtimeType:string;expectedPort:number|null;checkedAt:string;deploymentStatus:string|null;deployedCommit:string|null;processRunning:boolean|null;portListening:boolean|null;healthOk:boolean|null;deploymentId:string|null}>|null; toolsUsed:ReadonlyArray<string> }>;
   riskLevel: SqlRiskLevel; transactionGuidance: Readonly<{ applicable: boolean; summary: string | null }>; executionPlan: ExecutionPlan | null;
 }>;

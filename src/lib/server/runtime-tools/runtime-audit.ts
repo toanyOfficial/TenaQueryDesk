@@ -1,0 +1,1 @@
+export function auditRuntime(event:Readonly<{userId:string;conversationId:string;projectId:string|null;serverId:string|null;tool:string;ok:boolean;durationMs:number;deploymentId?:string|null;commit?:string|null;truncated?:boolean;errorCode?:string}>){console.info(JSON.stringify({scope:"runtime_audit",at:new Date().toISOString(),...event}));}

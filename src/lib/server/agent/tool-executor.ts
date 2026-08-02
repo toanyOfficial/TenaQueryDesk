@@ -3,6 +3,12 @@ import type { AgentToolCall, ToolContext, ToolResult } from "./types";
 import { ToolRegistry } from "./tool-registry";
 import { SchemaToolError } from "@/lib/server/schema-tools/types";
 import { KnowledgeError } from "@/lib/server/knowledge/types";
+import { GitHubToolError } from "@/lib/server/github-tools/github-tool-types";
+import { RuntimeToolError } from "@/lib/server/runtime-tools/runtime-tool-types";
+import { auditRuntime } from "@/lib/server/runtime-tools/runtime-audit";
+
+const runtimeToolNames=new Set(["get_runtime_project_context","get_deployment_status","get_process_status","get_port_status","run_project_health_check","get_reverse_proxy_status","get_deployment_report","compare_deployed_commit_with_repository","get_runtime_capabilities"]);
+function auditRuntimeTool(context:ToolContext,tool:string,input:unknown,result:ToolResult){if(!runtimeToolNames.has(tool))return;const values=input&&typeof input==="object"?input as Record<string,unknown>:{},data=result.ok&&result.data&&typeof result.data==="object"?result.data as Record<string,unknown>:{};auditRuntime({userId:context.userId,conversationId:context.conversationId,projectId:typeof data.projectId==="string"?data.projectId:typeof values.projectId==="string"?values.projectId:null,serverId:typeof data.serverId==="string"?data.serverId:null,tool,ok:result.ok,durationMs:result.meta.durationMs,deploymentId:typeof data.deploymentId==="string"?data.deploymentId:typeof values.deploymentId==="string"?values.deploymentId:null,commit:typeof data.deployedCommit==="string"?data.deployedCommit:null,truncated:result.ok?result.meta.truncated:undefined,errorCode:result.ok?undefined:result.error.code});}
 
 function validObject(input: unknown, schema: Readonly<Record<string, unknown>>): input is Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input)) return false;
@@ -26,6 +32,6 @@ export async function executeToolCall(registry: ToolRegistry, call: AgentToolCal
     const safe=redact(result,definition.sensitiveKeys), serialized=JSON.stringify(safe), limit=definition.maxResultCharacters;
     const data=serialized.length>limit ? { truncatedJson:serialized.slice(0,limit) } : safe;
     const output:ToolResult={ok:true,tool:call.name,data,meta:{durationMs:Date.now()-started,truncated:serialized.length>limit}};
-    auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:true,durationMs:output.meta.durationMs}); return output;
-  } catch(error) { const safe=error instanceof SchemaToolError||error instanceof KnowledgeError;const output:ToolResult=safe?{ok:false,tool:call.name,error:{code:error.code,message:error.message,retryable:error.retryable,...(error.details?{details:error.details}:{})},meta:{durationMs:Date.now()-started}}:failure(call.name,started,"TOOL_EXECUTION_FAILED","도구 실행 중 오류가 발생했습니다."); auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:false,durationMs:output.meta.durationMs}); return output; }
+    auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:true,durationMs:output.meta.durationMs});auditRuntimeTool(context,call.name,input,output); return output;
+  } catch(error) { const safe=error instanceof SchemaToolError||error instanceof KnowledgeError||error instanceof GitHubToolError||error instanceof RuntimeToolError;const output:ToolResult=safe?{ok:false,tool:call.name,error:{code:error.code,message:error.message,retryable:error.retryable,...(error.details?{details:error.details}:{})},meta:{durationMs:Date.now()-started}}:failure(call.name,started,"TOOL_EXECUTION_FAILED","도구 실행 중 오류가 발생했습니다."); auditAgent({event:"tool_finished",userId:context.userId,conversationId:context.conversationId,connectionId:context.connectionId,tool:call.name,ok:false,durationMs:output.meta.durationMs});auditRuntimeTool(context,call.name,input,output); return output; }
 }
