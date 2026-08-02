@@ -1,0 +1,13 @@
+import type { Pool, FieldPacket, RowDataPacket } from "mysql2/promise";
+import type { TargetConnection } from "@/lib/server/db/target-connections";
+import { getTargetPool } from "@/lib/server/db/target-connections";
+import { validateReadonlySql } from "./readonly-sql-validator";
+import { DEFAULT_SQL_TOOL_POLICY, type SqlToolPolicy } from "./sql-tool-types";
+import { sanitizeSqlRows } from "./sql-result-sanitizer";
+export class ReadonlySqlError extends Error{constructor(public code:string,message:string,public retryable=false){super(message);}}
+export async function executeReadonlySql(sql:string,connection:TargetConnection,maxRows?:number,policy:SqlToolPolicy=DEFAULT_SQL_TOOL_POLICY,pool:Pick<Pool,"query">=getTargetPool(connection)){
+ if(!connection.active)throw new ReadonlySqlError("SQL_CONNECTION_NOT_AVAILABLE","활성 대상 DB 연결이 아닙니다.");const validation=await validateReadonlySql(sql,connection,maxRows,policy);if(!validation.valid)throw new ReadonlySqlError(validation.errors[0]?.code??"SQL_VALIDATION_FAILED",validation.errors[0]?.message??"SQL 검증에 실패했습니다.",validation.errors[0]?.retryable);
+ const started=performance.now();let raw:RowDataPacket[],fields:FieldPacket[];try{[raw,fields]=await pool.query<RowDataPacket[]>({sql:validation.executionSql!,timeout:policy.timeoutMs});}catch(error){if((error as {code?:string}).code==="PROTOCOL_SEQUENCE_TIMEOUT")throw new ReadonlySqlError("SQL_EXECUTION_TIMEOUT","SQL 실행 제한시간을 초과했습니다.",true);throw new ReadonlySqlError("SQL_EXECUTION_FAILED","대상 DB에서 SQL을 실행하지 못했습니다.",true);}
+ const max=validation.appliedMaxRows!,truncated=raw.length>max,visible=raw.slice(0,max) as Array<Record<string,unknown>>;if(fields.length>policy.maxColumns)throw new ReadonlySqlError("SQL_RESULT_TOO_LARGE","결과 컬럼 수가 제한을 초과했습니다.");const {getSensitivityPolicies}=await import("@/lib/server/business-knowledge/business-knowledge-service");const policies=await getSensitivityPolicies(connection.id,fields.map(field=>field.name));const sanitized=sanitizeSqlRows(visible,policies);if(Buffer.byteLength(JSON.stringify(sanitized.rows))>policy.maxResultBytes)throw new ReadonlySqlError("SQL_RESULT_TOO_LARGE","결과 크기가 제한을 초과했습니다.");
+ return {success:true,columns:fields.map(f=>({name:f.name,type:String(f.type)})),rows:sanitized.rows,rowCount:sanitized.rows.length,truncated,durationMs:Math.round(performance.now()-started),maxRows:max,referencedTables:validation.referencedTables,maskedColumns:sanitized.maskedColumns,blockedColumns:sanitized.blockedColumns,warnings:[...validation.warnings,...(sanitized.maskedColumns.length||sanitized.blockedColumns.length?[{code:"SQL_RESULT_MASKED",message:"민감정보 컬럼을 마스킹하거나 차단했습니다.",retryable:false} as const]:[])]};
+}

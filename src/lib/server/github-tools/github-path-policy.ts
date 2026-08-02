@@ -1,0 +1,9 @@
+import { extname, posix } from "node:path";
+import { GitHubToolError } from "./github-tool-types";
+const SECRET=/(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential|token|private[_-]?key).*)$/i;
+const BLOCKED_EXT=new Set([".pem",".key",".p12",".pfx",".crt",".cer",".der",".jks",".db",".sqlite",".sql",".dump",".log",".zip",".gz",".png",".jpg",".jpeg",".gif",".webp",".pdf",".woff",".woff2"]);
+const EXCLUDED=new Set(["node_modules",".next","dist","build","coverage","vendor",".git"]);
+export function validateRepositoryPath(input:string,allowRoot=true){if(typeof input!=="string"||input.length>500||input.includes("\0")||input.startsWith("/")||input.includes("://")||input.split("/").includes(".."))throw new GitHubToolError("GITHUB_PATH_NOT_ALLOWED","저장소 내부의 안전한 상대 경로만 사용할 수 있습니다.");const normalized=posix.normalize(input.replace(/^\.\//,""));if((!allowRoot&&!normalized)||normalized===".."||[...EXCLUDED].some(part=>normalized.split("/").includes(part)))throw new GitHubToolError("GITHUB_PATH_NOT_ALLOWED","해당 경로는 탐색할 수 없습니다.");if(SECRET.test(normalized)||BLOCKED_EXT.has(extname(normalized).toLowerCase()))throw new GitHubToolError("GITHUB_SECRET_FILE_BLOCKED","민감하거나 지원하지 않는 파일 경로는 읽을 수 없습니다.");return normalized==="."?"":normalized;}
+export function validateRef(ref:string,allowedRefs:ReadonlyArray<string>){if(!/^(?:[A-Za-z0-9_.-]{1,100}|[0-9a-f]{40})$/i.test(ref)||(!/^[0-9a-f]{40}$/i.test(ref)&&!allowedRefs.includes(ref)))throw new GitHubToolError("GITHUB_REF_NOT_ALLOWED","허용된 branch 또는 commit만 조회할 수 있습니다.");return ref;}
+export function isExcludedPath(path:string){return path.split("/").some(part=>EXCLUDED.has(part))||SECRET.test(path)||BLOCKED_EXT.has(extname(path).toLowerCase())||/\.(?:min\.js|map)$/i.test(path);}
+export function assertTextContent(buffer:Buffer){if(buffer.includes(0))throw new GitHubToolError("GITHUB_BINARY_FILE_NOT_SUPPORTED","binary 파일은 읽을 수 없습니다.");}

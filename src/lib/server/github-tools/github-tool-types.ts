@@ -1,0 +1,7 @@
+export const GITHUB_LIMITS = Object.freeze({ treeDepth: 4, treeItems: 200, searchResults: 20, fileBytes: 300_000, fileLines: 500, historyItems: 20, commitFiles: 100, compareFiles: 100, requestTimeoutMs: 10_000, cacheTtlMs: 60_000 });
+export type RepositoryRole = "application" | "infrastructure" | "documentation" | "schema";
+export type GitHubRepositoryConfig = Readonly<{ id:string;owner:string;name:string;role:RepositoryRole;private:boolean;defaultBranch:string;deploymentBranch:string;allowedRefs:ReadonlyArray<string>;token:string }>;
+export type GitHubErrorCode = "GITHUB_NOT_CONFIGURED"|"GITHUB_REPOSITORY_NOT_CONNECTED"|"GITHUB_REPOSITORY_ACCESS_DENIED"|"GITHUB_REPOSITORY_NOT_FOUND"|"GITHUB_BRANCH_NOT_FOUND"|"GITHUB_REF_NOT_ALLOWED"|"GITHUB_PATH_NOT_ALLOWED"|"GITHUB_FILE_NOT_FOUND"|"GITHUB_FILE_TOO_LARGE"|"GITHUB_BINARY_FILE_NOT_SUPPORTED"|"GITHUB_SECRET_FILE_BLOCKED"|"GITHUB_SEARCH_FAILED"|"GITHUB_SEARCH_NOT_AVAILABLE"|"GITHUB_RATE_LIMIT_LOW"|"GITHUB_RATE_LIMIT_EXCEEDED"|"GITHUB_API_TIMEOUT"|"GITHUB_API_FAILED"|"GITHUB_RESULT_TOO_LARGE"|"GITHUB_COMMIT_NOT_FOUND"|"GITHUB_COMPARE_FAILED";
+export class GitHubToolError extends Error { constructor(public readonly code:GitHubErrorCode,message:string,public readonly retryable=false,public readonly details?:Readonly<Record<string,unknown>>){super(message);} }
+export type RateLimit = Readonly<{remaining:number|null;resetAt:string|null;low:boolean}>;
+export type GitHubResponse<T> = Readonly<{data:T;rateLimit:RateLimit;cached:boolean;checkedAt:string}>;
