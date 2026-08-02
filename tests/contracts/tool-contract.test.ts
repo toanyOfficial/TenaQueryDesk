@@ -1,0 +1,5 @@
+import {describe,expect,test} from "bun:test";
+import snapshot from "./tool-contract.snapshot.json";
+import {createInitialToolRegistry} from "@/lib/server/agent/initial-tools";
+const canonical=()=>createInitialToolRegistry().list().map(tool=>({name:tool.name,required:[...((tool.inputSchema.required as string[]|undefined)??[])].sort(),properties:Object.keys((tool.inputSchema.properties as object|undefined)??{}).sort(),requiresConnection:tool.requiresConnection,resourceType:tool.security?.resourceType,action:tool.security?.action,riskLevel:tool.security?.riskLevel,auditLevel:tool.security?.auditLevel})).sort((a,b)=>a.name.localeCompare(b.name));
+describe("Agent tool public contract",()=>{test("matches the reviewed structural snapshot",()=>expect(canonical()).toEqual(snapshot as unknown as ReturnType<typeof canonical>));test("keeps descriptions and strict object schemas",()=>{for(const tool of createInitialToolRegistry().list()){expect(tool.description.trim().length).toBeGreaterThan(10);expect(tool.inputSchema).toMatchObject({type:"object",additionalProperties:false});expect(tool.security).toBeDefined();}});});

@@ -1,0 +1,26 @@
+name: staging-e2e
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: 1.2.14 }
+      - run: bun scripts/staging-e2e.ts | tee staging-e2e-result.json
+        env:
+          E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+          E2E_SHARED_PASSWORD: ${{ secrets.E2E_SHARED_PASSWORD }}
+          E2E_CONNECTION_ID: ${{ vars.E2E_CONNECTION_ID }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-e2e-${{ github.sha }}
+          path: staging-e2e-result.json
+          retention-days: 14
+          if-no-files-found: warn

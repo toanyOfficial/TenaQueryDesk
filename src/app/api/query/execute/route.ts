@@ -8,8 +8,10 @@ import { auditReadonlySql } from "@/lib/server/sql-tools/sql-audit";
 import { recordConversationExecution } from "@/lib/server/conversation/conversation-service";
 import {assertSameOrigin,getAuthenticatedSecurityActor,securityErrorResponse} from "@/lib/server/security/request-security";
 import {authorizeApiAction} from "@/lib/server/security/authorization-service";
+import {getFeatureFlags} from "@/lib/server/features/feature-flags";
 
 export async function POST(request: Request) {
+  if(!getFeatureFlags().sqlExecution)return NextResponse.json({ok:false,errorType:"feature_disabled",errorCode:"FEATURE_DISABLED",error:"SQL 실행 기능이 현재 비활성화되어 있습니다."},{status:503});
   const session=await getSession(); if (!session) return NextResponse.json({ ok: false, errorType: "authentication", error: "인증이 필요합니다." }, { status: 401 });try{assertSameOrigin(request);}catch(error){return securityErrorResponse(error,NextResponse);}
   let body: unknown; try { body = await request.json(); } catch { return NextResponse.json({ ok: false, errorType: "validation", error: "요청 형식이 올바르지 않습니다." }, { status: 400 }); }
   if (!body || typeof body !== "object") return NextResponse.json({ ok: false, errorType: "validation", error: "요청 형식이 올바르지 않습니다." }, { status: 400 });

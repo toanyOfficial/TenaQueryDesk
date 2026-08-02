@@ -6,6 +6,7 @@ import { BusinessKnowledgeError } from "@/lib/server/business-knowledge/business
 import {assertSameOrigin,getAuthenticatedSecurityActor,securityErrorResponse} from "@/lib/server/security/request-security";
 import {authorizeApiAction} from "@/lib/server/security/authorization-service";
 import {SecurityError} from "@/lib/server/security/security-errors";
+import {getFeatureFlags} from "@/lib/server/features/feature-flags";
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: Context) {
@@ -15,6 +16,7 @@ export async function GET(request: Request, context: Context) {
   catch (error) { return safeError(error); }
 }
 export async function PUT(request: Request, context: Context) {
+  if(!getFeatureFlags().businessKnowledgeManagement)return NextResponse.json({ok:false,errorCode:"FEATURE_DISABLED",error:"업무 지식 관리 기능이 비활성화되어 있습니다."},{status:503});
   if (!(await getSession())) return NextResponse.json({ ok: false, error: "관리자 인증이 필요합니다." }, { status: 401 });
   try { assertSameOrigin(request);const id=(await context.params).id,actor=await getAuthenticatedSecurityActor();await authorizeApiAction({actor,resourceType:"business_knowledge",resourceId:id,action:"update"});const body = await request.json() as { version?: unknown; definition?: unknown }; if (!Number.isSafeInteger(body.version)) throw new Error("버전을 확인해 주세요."); const item = await updateBusinessKnowledge(id, body.definition, body.version as number, "shared-admin"); return NextResponse.json({ ok: true, item }); }
   catch (error) { return safeError(error); }

@@ -5,6 +5,7 @@ import { BusinessKnowledgeError, KNOWLEDGE_STATUSES, KNOWLEDGE_TYPES } from "@/l
 import {assertSameOrigin,getAuthenticatedSecurityActor,securityErrorResponse} from "@/lib/server/security/request-security";
 import {authorizeApiAction} from "@/lib/server/security/authorization-service";
 import {SecurityError} from "@/lib/server/security/security-errors";
+import {getFeatureFlags} from "@/lib/server/features/feature-flags";
 
 export async function GET(request: Request) {
   if (!(await getSession())) return NextResponse.json({ ok: false, error: "인증이 필요합니다." }, { status: 401 });
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if(!getFeatureFlags().businessKnowledgeManagement)return NextResponse.json({ok:false,errorCode:"FEATURE_DISABLED",error:"업무 지식 관리 기능이 비활성화되어 있습니다."},{status:503});
   if (!(await getSession())) return NextResponse.json({ ok: false, error: "관리자 인증이 필요합니다." }, { status: 401 });
   try { assertSameOrigin(request);const actor=await getAuthenticatedSecurityActor();await authorizeApiAction({actor,resourceType:"business_knowledge",resourceId:"*",action:"create"});const item = await createBusinessKnowledge(await request.json(), "shared-admin"); return NextResponse.json({ ok: true, item }, { status: 201 }); }
   catch (error) { return safeError(error); }

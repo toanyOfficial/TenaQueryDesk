@@ -1,0 +1,741 @@
+[
+  {
+    "name": "capture_ui_screenshot",
+    "required": [
+      "target",
+      "uiProjectId"
+    ],
+    "properties": [
+      "elementRef",
+      "target",
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "screenshot",
+    "action": "create",
+    "riskLevel": "high",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "click_ui_element",
+    "required": [
+      "elementRef",
+      "expectedAction",
+      "uiProjectId"
+    ],
+    "properties": [
+      "elementRef",
+      "expectedAction",
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "high",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "compare_deployed_commit_with_repository",
+    "required": [
+      "projectId",
+      "ref"
+    ],
+    "properties": [
+      "projectId",
+      "ref"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "compare_repository_refs",
+    "required": [
+      "base",
+      "head",
+      "limit",
+      "repositoryRole"
+    ],
+    "properties": [
+      "base",
+      "head",
+      "limit",
+      "path",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "describe_table",
+    "required": [
+      "tableName"
+    ],
+    "properties": [
+      "tableName"
+    ],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "execute_readonly_sql",
+    "required": [
+      "sql"
+    ],
+    "properties": [
+      "maxRows",
+      "sql"
+    ],
+    "requiresConnection": true,
+    "resourceType": "sql",
+    "action": "execute",
+    "riskLevel": "high",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "explain_readonly_sql",
+    "required": [
+      "sql"
+    ],
+    "properties": [
+      "sql"
+    ],
+    "requiresConnection": true,
+    "resourceType": "sql",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "find_repository_references",
+    "required": [
+      "limit",
+      "repositoryRole",
+      "symbol"
+    ],
+    "properties": [
+      "limit",
+      "path",
+      "ref",
+      "repositoryRole",
+      "symbol"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "search",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "find_table_relationships",
+    "required": [
+      "depth",
+      "direction",
+      "tableName"
+    ],
+    "properties": [
+      "depth",
+      "direction",
+      "tableName"
+    ],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "search",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_business_relationship",
+    "required": [
+      "sourceTable",
+      "targetConcept"
+    ],
+    "properties": [
+      "sourceTable",
+      "targetConcept"
+    ],
+    "requiresConnection": true,
+    "resourceType": "business_knowledge",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_column_semantics",
+    "required": [
+      "columnName",
+      "tableName"
+    ],
+    "properties": [
+      "columnName",
+      "tableName"
+    ],
+    "requiresConnection": true,
+    "resourceType": "business_knowledge",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_commit_details",
+    "required": [
+      "commit",
+      "repositoryRole"
+    ],
+    "properties": [
+      "commit",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_deployment_report",
+    "required": [
+      "deploymentId",
+      "maxLines",
+      "projectId",
+      "section"
+    ],
+    "properties": [
+      "deploymentId",
+      "maxLines",
+      "projectId",
+      "section"
+    ],
+    "requiresConnection": true,
+    "resourceType": "deployment_report",
+    "action": "read",
+    "riskLevel": "high",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_deployment_status",
+    "required": [
+      "projectId"
+    ],
+    "properties": [
+      "projectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_file_history",
+    "required": [
+      "limit",
+      "path",
+      "repositoryRole"
+    ],
+    "properties": [
+      "limit",
+      "path",
+      "ref",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_knowledge_capabilities",
+    "required": [],
+    "properties": [],
+    "requiresConnection": false,
+    "resourceType": "knowledge_document",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_metric_definition",
+    "required": [
+      "metric"
+    ],
+    "properties": [
+      "metric"
+    ],
+    "requiresConnection": true,
+    "resourceType": "business_knowledge",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_port_status",
+    "required": [
+      "projectId"
+    ],
+    "properties": [
+      "projectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_process_status",
+    "required": [
+      "projectId"
+    ],
+    "properties": [
+      "projectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_repository_context",
+    "required": [
+      "repositoryRole"
+    ],
+    "properties": [
+      "ref",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_reverse_proxy_status",
+    "required": [
+      "projectId"
+    ],
+    "properties": [
+      "projectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_runtime_capabilities",
+    "required": [
+      "projectRole"
+    ],
+    "properties": [
+      "projectRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_runtime_project_context",
+    "required": [
+      "projectRole"
+    ],
+    "properties": [
+      "projectRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_schema_summary",
+    "required": [],
+    "properties": [],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_schema_version",
+    "required": [],
+    "properties": [],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_selected_database_context",
+    "required": [],
+    "properties": [],
+    "requiresConnection": true,
+    "resourceType": "db_connection",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_service_capabilities",
+    "required": [],
+    "properties": [],
+    "requiresConnection": false,
+    "resourceType": "service",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_ui_capabilities",
+    "required": [
+      "environment"
+    ],
+    "properties": [
+      "environment"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "get_ui_console_summary",
+    "required": [
+      "uiProjectId"
+    ],
+    "properties": [
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_ui_network_summary",
+    "required": [
+      "uiProjectId"
+    ],
+    "properties": [
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "get_ui_project_context",
+    "required": [
+      "environment"
+    ],
+    "properties": [
+      "environment"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "inspect_ui_element",
+    "required": [
+      "elementRef",
+      "uiProjectId"
+    ],
+    "properties": [
+      "elementRef",
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "inspect_ui_page",
+    "required": [
+      "includeInteractiveElements",
+      "includeText",
+      "maxElements",
+      "scope",
+      "uiProjectId"
+    ],
+    "properties": [
+      "includeInteractiveElements",
+      "includeText",
+      "maxElements",
+      "scope",
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "list_knowledge_documents",
+    "required": [],
+    "properties": [
+      "category",
+      "page",
+      "pageSize",
+      "status"
+    ],
+    "requiresConnection": false,
+    "resourceType": "knowledge_document",
+    "action": "list",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "list_repository_tree",
+    "required": [
+      "depth",
+      "limit",
+      "path",
+      "repositoryRole"
+    ],
+    "properties": [
+      "depth",
+      "limit",
+      "path",
+      "ref",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "list_schema_objects",
+    "required": [
+      "objectType",
+      "page",
+      "pageSize"
+    ],
+    "properties": [
+      "objectType",
+      "page",
+      "pageSize"
+    ],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "list",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "navigate_ui_route",
+    "required": [
+      "path",
+      "uiProjectId"
+    ],
+    "properties": [
+      "path",
+      "uiProjectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "open_ui_page",
+    "required": [
+      "path",
+      "uiProjectId",
+      "waitUntil"
+    ],
+    "properties": [
+      "path",
+      "uiProjectId",
+      "waitUntil"
+    ],
+    "requiresConnection": true,
+    "resourceType": "ui_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "read_business_knowledge",
+    "required": [
+      "knowledgeId"
+    ],
+    "properties": [
+      "knowledgeId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "business_knowledge",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "read_knowledge_document",
+    "required": [
+      "documentId"
+    ],
+    "properties": [
+      "documentId",
+      "endSection",
+      "maxChars",
+      "section"
+    ],
+    "requiresConnection": false,
+    "resourceType": "knowledge_document",
+    "action": "read",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "read_repository_file",
+    "required": [
+      "endLine",
+      "path",
+      "repositoryRole",
+      "startLine"
+    ],
+    "properties": [
+      "endLine",
+      "path",
+      "ref",
+      "repositoryRole",
+      "startLine"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "run_project_health_check",
+    "required": [
+      "checkType",
+      "projectId"
+    ],
+    "properties": [
+      "checkType",
+      "projectId"
+    ],
+    "requiresConnection": true,
+    "resourceType": "runtime_project",
+    "action": "read",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "search_business_knowledge",
+    "required": [
+      "limit",
+      "query",
+      "types"
+    ],
+    "properties": [
+      "limit",
+      "query",
+      "types"
+    ],
+    "requiresConnection": true,
+    "resourceType": "business_knowledge",
+    "action": "search",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "search_knowledge_documents",
+    "required": [
+      "query"
+    ],
+    "properties": [
+      "audience",
+      "category",
+      "limit",
+      "query",
+      "status"
+    ],
+    "requiresConnection": false,
+    "resourceType": "knowledge_document",
+    "action": "search",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "search_repository_code",
+    "required": [
+      "limit",
+      "query",
+      "repositoryRole"
+    ],
+    "properties": [
+      "limit",
+      "path",
+      "query",
+      "ref",
+      "repositoryRole"
+    ],
+    "requiresConnection": true,
+    "resourceType": "github_repository",
+    "action": "search",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  },
+  {
+    "name": "search_schema",
+    "required": [
+      "limit",
+      "query"
+    ],
+    "properties": [
+      "limit",
+      "query"
+    ],
+    "requiresConnection": true,
+    "resourceType": "schema",
+    "action": "search",
+    "riskLevel": "low",
+    "auditLevel": "basic"
+  },
+  {
+    "name": "validate_readonly_sql",
+    "required": [
+      "sql"
+    ],
+    "properties": [
+      "sql"
+    ],
+    "requiresConnection": true,
+    "resourceType": "sql",
+    "action": "search",
+    "riskLevel": "medium",
+    "auditLevel": "detailed"
+  }
+]

@@ -30,3 +30,7 @@ next-env.d.ts
 .DS_Store
 .idea/
 .vscode/
+
+# Structured quality reports and redacted failure artifacts
+/.quality/
+/test-artifacts/
